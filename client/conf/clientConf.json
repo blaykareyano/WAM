@@ -1,14 +1,6 @@
 {
     "fileExtensions" : {          // file extension arrays; should be of the form "*.extension" wildcard notation
-        "starccm" : ["*.sim"],
         "abaqus"  : ["*.inp"]
-    },
-
-    "starccmOptions": {
-        "starccmJSONTemplateFile" : "starSubmit.json.tmpl",   // template file defining the star-ccm+ the json submit file 
-        "defaultCPUs" : 32,           // default number of CPUs
-        "defaultLicense" : "power",    // default license, valid options: "power" or "serial"
-        "defaultJavaMacro" : "RunStarCCM.java"   // default macro used to run star-ccm+   
     },
 
     "abaqusOptions": {
@@ -16,10 +8,6 @@
         "defaultCPUs" : 1,           // default number of CPUs
         "defaultGPUs" : 0,           // default number of GPUs
         "defaultAbqEnvFile" : "custom_v6.env"  //default abaqus environment file  
-    },
-
-    "genericFileOptions": {
-        "genericFileJSONTemplateFile" : "generic.json.tmpl"   // template file defining the abaqus the json submit file
     },
 
     "defaultEmailDomain" : "questintegrity.com"
