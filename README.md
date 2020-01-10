@@ -31,6 +31,6 @@ This script contains:
 - Monitoring of job to determine when calls to WAMserver script should be made
 
 ### Pickle Files
-counter.p - keeps a counter going for job IDs
-jobList.p - list of jobs in case restart due to critical failure
-WAM_uri.p - allows for client to load the uri (universal resource identifier) rather than querying the name server
+- counter.p - keeps a counter going for job IDs
+- jobList.p - list of jobs in case restart due to critical failure
+- WAM_uri.p - allows for client to load the uri (universal resource identifier) rather than querying the name server
