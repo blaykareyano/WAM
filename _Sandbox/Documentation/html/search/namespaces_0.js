@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sandbox_9',['Sandbox',['../namespace_sandbox.html',1,'']]]
+  ['emailmisc_12',['emailMisc',['../namespaceemail_misc.html',1,'']]]
 ];

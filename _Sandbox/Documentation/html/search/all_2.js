@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['func_2',['func',['../namespace_sandbox.html#a5de1ce02da82692d89595888f7ed0dad',1,'Sandbox']]]
+  ['emailmisc_2',['emailMisc',['../namespaceemail_misc.html',1,'']]],
+  ['emailmisc_2epy_3',['emailMisc.py',['../email_misc_8py.html',1,'']]]
 ];

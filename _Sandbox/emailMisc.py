@@ -3,7 +3,6 @@ import smtplib
 import base64
 
 ## @package emailMisc
-## @todo check compatibility post server scripting
 ## @brief 
 # Sends an email message to the recipient email address using the sender's email address.
 

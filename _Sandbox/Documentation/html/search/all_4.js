@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['sandbox_5',['Sandbox',['../namespace_sandbox.html',1,'']]],
-  ['sandbox_2epy_6',['Sandbox.py',['../_sandbox_8py.html',1,'']]]
+  ['pyclass_5',['PyClass',['../class_sandbox_1_1_py_class.html',1,'Sandbox']]],
+  ['pymethod_6',['PyMethod',['../class_sandbox_1_1_py_class.html#a75d10883097152b063416fa87dfd264c',1,'Sandbox::PyClass']]]
 ];

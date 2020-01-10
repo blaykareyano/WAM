@@ -1,10 +1,10 @@
 var indexSectionsWithContent =
 {
-  0: "_cfpst",
+  0: "_cefpst",
   1: "p",
-  2: "s",
-  3: "s",
-  4: "_fp",
+  2: "es",
+  3: "es",
+  4: "_fps",
   5: "c",
   6: "t"
 };
