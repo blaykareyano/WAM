@@ -1,6 +1,6 @@
 # WAM - Workload Allocation Manager
 
-![yee](https://github.com/blaykareyano/WAM/yeet.JPG "YEET")
+![yee](https://github.com/blaykareyano/WAM/blob/master/yeet.JPG "YEET")
 
 ## Summary
 WAM centralizes job submission queues for multiple independent computational machines. A host computer (WAM Server) manages the queue, distribution of work to remote computational machines, and license management.
