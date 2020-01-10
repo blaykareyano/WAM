@@ -16,7 +16,7 @@ This script contains:
 - User interface for job submission paramenters included cores, memory, time delay/schedule, license server, optional completion email
 - Transfer of input files and output files to and from the server and client machines
 - Monitor job status file during job (.msg, .dat, .sta, .log) 
-- Managment of job queues on each client machine (pickle files)
+- Managment of job queues on each client machine (counter.p, jobList.p)
 - Job controls including kill and submit commands
 - Email generation at end of job (optional)
 - [Pyro4](https://pyro4.readthedocs.io/en/stable/index.html "Pyro4 Documentation") Daemon definition
@@ -31,6 +31,5 @@ This script contains:
 
 ### Pickle Files
 - counter.p - keeps a counter going for job IDs
-- jobList.p - list of jobs in case restart due to critical failure
 - WAM_uri.p - allows for client to load the uri (universal resource identifier) rather than querying the name server
 ---

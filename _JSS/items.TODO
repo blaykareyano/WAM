@@ -1,0 +1,14 @@
+This that I need to do:
+  ☐ For failsafe copy stuff to a tilda file, and then write. For loading file we first try to load it from memory, and if we can't then we load the tilde file. Will have to do date comparisson.
+  ☐ add a way to delay the submit
+  ☐ add history commands (shows: job name, user, when submitted, when completed, time ellapsed, status (completed, killed, error), use sqlite?)
+  ☐ make jss output monthly histogram to see usage
+  ☐ make script reload the *.json file before run in case we changed any parameters and don't want to kill the job and jump back in the queue line. We want to reload evreything but the jobs list (as a json file contains multiple
+  jobs)
+  ☐ make abaqus not slow down the queue in case it does not have enough licenses
+  ☐ make star-ccm+ resubmit (in case we want to run in small batches)
+  ☐ make install script  
+  ☐ add command on server/client that we can probe what are the  default server solver values
+  ☐ make jss split command  to split json files
+  ☐ make jss combine to combine your json files
+
