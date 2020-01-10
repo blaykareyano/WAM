@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# -------------------------------------------------------------------------
+#    <Pyro4 NameServer Script>
+#    Copyright (C) <2011>  <Pierre PACORY> - ppacory@...<mailto:ppacory@...>
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>;.
+# -------------------------------------------------------------------------
+
+
+
+MESSAGEDIR=/opt/JSS/server/logs/
+MESSAGELOG=/opt/JSS/server/logs/server.log
+PID=/var/run/jssServer.pid
+
+# Add Pyro Config
+# here you can add others ...
+#export PYRO_HMAC_KEY=1234 #add hash key here for production server
+export PYRO_LOGFILE="$MESSAGELOG"
+export PYRO_LOGLEVEL=DEBUG
+
+# Check the script is being run by root user
+if [ "$(id -u)" != "0" ]; then
+  echo 1>&2 "ERROR: The $0 script must be run as root"
+  exit 1
+fi
+
+# Create the PID File
+touch $PID
+
+case "$1" in
+  start)
+
+    # only start the service if the network is up:
+    ping -c 1 google.com
+    while [  $? != 0 ]; do
+      sleep 2  # ping google every 2 seconds
+      ping -c 1 google.com
+    done
+
+    # create the log directory if not exist
+    [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
+
+    echo "Starting JSS Server"
+    # test if not already running
+    if [ ! -f "/proc/$(cat $PID)/exe" ]; then
+      export PYTHONPATH="/opt/JSS/:PYTHONPATH"
+      export DISPLAY=":0"
+      python /opt/JSS/server/JSSServer.py >/dev/null 2>&1 &
+      #python -m /opt/JSS/server/JSSServer &
+      echo $!>"$PID"
+    else
+      echo "JSS Server already running"
+    fi
+    ;;
+  stop)
+    echo "Stopping JSS Server"
+    # test if running
+    if [ -f "/proc/$(cat $PID)/exe" ]; then
+      kill -9 "$(cat $PID)"
+      rm -rf "$PID"
+    else
+      echo "JSS Server already stopped"
+    fi
+    ;;
+  restart)
+    $0 stop
+    $0 start
+    ;;
+  *)
+    echo "usage: $0 {start|stop|restart}"
+esac
+exit 0

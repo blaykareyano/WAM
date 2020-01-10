@@ -1,0 +1,43 @@
+
+{
+
+    // array containing the file paths for all *.sim files that we will be running
+    "simFiles" : $simFiles,   
+
+    "about" : "",       //optional, description about cases that we are running (recommended size: up to 30 characters)
+
+    "solverFlags" : {
+
+        /*
+
+        Any star-ccm+ solver flags (with the exception of simulation file 
+        name and solver path) should be set in the solverFlags block. You are not 
+        limited to the flags shown below. You should be able to specify all
+        of the star-ccm+ flags 
+
+        */
+
+        /* java macro that we will be using for each simulation run defined in the "simFiles" array: */
+        "-batch" : "$javaMacroFile",
+
+        "-$licenseType" : null,  // License server type used (i.e., power, serial, etc.). This flag takes no arguments, so we set it to null 
+
+        "-classpath" : "/home/cdavis/myStarLib",
+
+        "-np" : $nCPUs  // number of CPUs used to run the simulations
+    },
+
+    // star-ccm+ solver path, set to "default" to use the system default, or specify full path:
+    "solver" : "default", 
+
+    "advanced" : {
+        // optional, uncomment below if you wish to receive an email message after each job has been completed
+        // "sendEmailTo" :  "$emailAddress"
+    },
+
+    "InternalUse" : { // internal use variables, keep as is...
+        "jsonFileType": "starccm",       // internal use - don't touch
+        "jsonFileVersion" : "star0.2"    // internal use - don't touch
+    }
+
+}
