@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.17">
+  <compounddef id="class_sandbox_1_1_py_class" kind="class" language="Python" prot="public">
+    <compoundname>Sandbox::PyClass</compoundname>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="class_sandbox_1_1_py_class_1ae0e44565c7ec2ba683f73558542e5bf0" prot="public" static="yes" mutable="no">
+        <type>int</type>
+        <definition>int Sandbox.PyClass::classVar</definition>
+        <argsstring></argsstring>
+        <name>classVar</name>
+        <initializer>=  0;</initializer>
+        <briefdescription>
+<para>A class variable. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" line="38" column="1" bodyfile="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" bodystart="38" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="class_sandbox_1_1_py_class_1a8e285c82f09d8db1b60dc36740244cd0" prot="private" static="no" mutable="no">
+        <type></type>
+        <definition>Sandbox.PyClass::_memVar</definition>
+        <argsstring></argsstring>
+        <name>_memVar</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" line="30" column="1" bodyfile="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" bodystart="30" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="class_sandbox_1_1_py_class_1aac74e9eb09089637d264fbfd57a08901" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def Sandbox.PyClass.__init__</definition>
+        <argsstring>(self)</argsstring>
+        <name>__init__</name>
+        <param>
+          <type>self</type>
+          <defname>self</defname>
+        </param>
+        <briefdescription>
+<para>The constructor. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" line="29" column="1" bodyfile="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" bodystart="29" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="class_sandbox_1_1_py_class_1a75d10883097152b063416fa87dfd264c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def Sandbox.PyClass.PyMethod</definition>
+        <argsstring>(self)</argsstring>
+        <name>PyMethod</name>
+        <param>
+          <type>self</type>
+          <defname>self</defname>
+        </param>
+        <briefdescription>
+<para>Documentation for a method. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>self</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The object pointer. </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" line="34" column="1" bodyfile="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" bodystart="34" bodyend="36"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Documentation for a class. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>seperate documentation for a class. </para>
+    </detaileddescription>
+    <location file="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" line="26" column="1" bodyfile="C:/Users/b.arellano/Documents/GitHub/WAM/_Sandbox/Sandbox.py" bodystart="26" bodyend="41"/>
+    <listofallmembers>
+      <member refid="class_sandbox_1_1_py_class_1aac74e9eb09089637d264fbfd57a08901" prot="public" virt="non-virtual"><scope>Sandbox::PyClass</scope><name>__init__</name></member>
+      <member refid="class_sandbox_1_1_py_class_1a8e285c82f09d8db1b60dc36740244cd0" prot="private" virt="non-virtual"><scope>Sandbox::PyClass</scope><name>_memVar</name></member>
+      <member refid="class_sandbox_1_1_py_class_1ae0e44565c7ec2ba683f73558542e5bf0" prot="public" virt="non-virtual"><scope>Sandbox::PyClass</scope><name>classVar</name></member>
+      <member refid="class_sandbox_1_1_py_class_1a75d10883097152b063416fa87dfd264c" prot="public" virt="non-virtual"><scope>Sandbox::PyClass</scope><name>PyMethod</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>
