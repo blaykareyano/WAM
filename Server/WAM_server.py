@@ -129,3 +129,58 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 MA  02110-1301, USA.
         """%(version)
+
+	## loadSerializedCounter function
+	# Loads the JobID counter from a pickle file; used to init the persistent counter
+	# If the file does not exist it will initialize self.jobID to 0
+	# \todo finalize pickle file path
+	def loadSerializedCounter(self,filePath = "/opt/WAM/server/counter.p"):
+		with self.serializeCounterLock:
+			if os.path.isfile(filePath):
+				self.jobID = pickle.load(open(filePath,"rb"))
+			else:
+				self.jobID = 0
+
+    ## loadSerializedJobList function
+    # Loads self.jobs list from a pickle file
+    # Used to init jobs in case the server crashes or is killed while have jobs are in the queue
+    # If the file does not exist it will return an empty list.
+    # \todo finalize pickle file path
+	def loadSerializedJobList(self,filePath = "/opt/WAM/server/jobList.p"):
+		with self.serializeJobListLock:
+			if os.path.isfile(filePath):
+				self.jobs = pickle.load(open(filePath,"rb"))
+			else:
+				self.jobs = []
+
+	## serializeCounter function
+	# Serialized the JobID counter using a pickle file
+	# Used to init the persistent counter
+	# \todo finalize pickle file path
+	def serializeCounter(self,filePath = "/opt/WAM/server/counter.p"):
+		with self.serializeCounterLock:        
+			try:
+				pickle.dump(self.jobID, open(filePath,"wb"))
+			except:
+				logging.error("Unable to serialize (i.e., pickle) counter")
+
+	## serializeJobList function
+	# Serialize our job list to restart a job in the queue in case the server application is killed.
+	# \todo finalize pickle file path
+	def serializeJobList(self,filePath = "/opt/WAM/server/jobList.p"):
+		with self.serializeJobListLock:
+			try:
+				pickle.dump(self.jobs, open(filePath,"wb"))
+			except:
+				logging.error("Unable to serialize (i.e., pickle) self.jobs")
+
+	## removeAbqLockFile function
+	# Scans the directory for an Abaqus lock file (*.lck) and deletes if it exists
+	# \todo update clientWorkingDir?
+	def removeAbqLockFile(self, job):
+		if (job["InternalUse"]["jsonFileType"] == "abaqus"):
+			lckFile = "%s%s"%(job["jobName"],".lck")
+			clientWorkingDir = job["InternalUse"]["clientWorkingDir"]   
+			lckFile = os.path.join(clientWorkingDir,lckFile)  
+			if os.path.isfile(lckFile):
+			os.remove(lckFile)
