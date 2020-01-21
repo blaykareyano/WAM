@@ -24,9 +24,9 @@ Pyro4.config.COMMTIMEOUT = 10.0
 version = 0.0
 
 ## WAM Server Class:
-# Contains all functions for WAM server  
+# Contains all methods for WAM server  
 class WAMServer(object):
-	## __init__ Method
+	## __init__ method
 	# initialize the values of instance members for the new object  
 	def __init__(self):
 		self.serverScriptDirectory = os.path.dirname(os.path.realpath(__file__))	# directory where this file is located
@@ -50,14 +50,12 @@ class WAMServer(object):
 			self.jobs = [] # fail safe is not present in config file: set default to disabled
 
 		self.currentJobID = None					# the job id for the current job that is running
-		self.currentSubProcess = None				# holds the subprocess currently running one our solvers 
-													# in case we want to kill it 
+		self.currentSubProcess = None				# holds subprocess currently running solver in case of kill 
 		self.start = datetime.datetime.now()		# init stop watch with dummy value
 		self.jobsCompleted = []
-		self.CPULock = threading.Lock()				# thread lock used to restrict CPU access while running an analysis
-		self.jobListLock = threading.Lock()			# thread lock used to restict access to our jobs list while it is being used
-		self.jobsCompletedListLock = threading.Lock()	# thread lock used to restict access to our jobsCompleted list
-														# while it is being used
+		self.CPULock = threading.Lock()				# thread lock to restrict CPU access while running an analysis
+		self.jobListLock = threading.Lock()			# thread lock to restict access to jobs list while in use
+		self.jobsCompletedListLock = threading.Lock()	# thread lock to restict access to jobsCompleted list while in use
 		self.logFile = os.path.join(self.serverScriptDirectory,r"logs",self.serverConf["localhost"]["logFileFile"])  # log file path
 		
 		# see if the log file exists:
@@ -76,7 +74,32 @@ class WAMServer(object):
 
 		self.nsThread = None  # name server connection/reconnection thread
 
-	## connectToNameServer Function
+	## about method
+	# Returns licens and version information
+	# \todo Need reference to Bruno's JSS Server?
+	# \todo add anyone else working on WAM
+	def about(self):
+		return """
+WAM - Workload Allocation Manager - Version %s
+Copyright (C) 2020 - Blake N. Arellano - blake.n.arellano@gmail.com
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA  02110-1301, USA.
+        """%(version)
+
+	## connectToNameServer method
 	# Function spawnes a thread that keeps connecting/reconnecting to the name server after every N seconds.
 	def connectToNameServer(self, jss_uri):
 		registerWithNameServer = self.serverConf["nameServer"]["registerWithNameServer"]
@@ -104,33 +127,14 @@ class WAMServer(object):
 			self.nsThread = threading.Thread(target=nsReregister, args=(jss_uri,))
 			self.nsThread.setDaemon(True)
 			self.nsThread.start()
-	
-	## about function
-	# Returns licens and version information
-	# \todo Need reference to Bruno's JSS Server?
-	# \todo add anyone else working on WAM
-	def about(self):
-		return """
-WAM - Workload Allocation Manager - Version %s
-Copyright (C) 2020 - Blake N. Arellano - blake.n.arellano@gmail.com
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+	## shakeHands method
+	# tests if the client can connect to the server
+    def shakeHands(self, clientName, clientMachine):
+		logging.info("Shook hands with client %s@%s"%(clientName,clientMachine))
+		return True
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-MA  02110-1301, USA.
-        """%(version)
-
-	## loadSerializedCounter function
+	## loadSerializedCounter method
 	# Loads the JobID counter from a pickle file; used to init the persistent counter
 	# If the file does not exist it will initialize self.jobID to 0
 	# \todo finalize pickle file path
@@ -141,7 +145,7 @@ MA  02110-1301, USA.
 			else:
 				self.jobID = 0
 
-    ## loadSerializedJobList function
+    ## loadSerializedJobList method
     # Loads self.jobs list from a pickle file
     # Used to init jobs in case the server crashes or is killed while have jobs are in the queue
     # If the file does not exist it will return an empty list.
@@ -153,7 +157,7 @@ MA  02110-1301, USA.
 			else:
 				self.jobs = []
 
-	## serializeCounter function
+	## serializeCounter method
 	# Serialized the JobID counter using a pickle file
 	# Used to init the persistent counter
 	# \todo finalize pickle file path
@@ -164,7 +168,7 @@ MA  02110-1301, USA.
 			except:
 				logging.error("Unable to serialize (i.e., pickle) counter")
 
-	## serializeJobList function
+	## serializeJobList method
 	# Serialize our job list to restart a job in the queue in case the server application is killed.
 	# \todo finalize pickle file path
 	def serializeJobList(self,filePath = "/opt/WAM/server/jobList.p"):
@@ -174,7 +178,7 @@ MA  02110-1301, USA.
 			except:
 				logging.error("Unable to serialize (i.e., pickle) self.jobs")
 
-	## removeAbqLockFile function
+	## removeAbqLockFile method
 	# Scans the directory for an Abaqus lock file (*.lck) and deletes if it exists
 	# \todo update clientWorkingDir?
 	def removeAbqLockFile(self, job):
@@ -184,3 +188,22 @@ MA  02110-1301, USA.
 			lckFile = os.path.join(clientWorkingDir,lckFile)  
 			if os.path.isfile(lckFile):
 			os.remove(lckFile)
+
+	## jobData method
+	# takes user input to define job variables
+	# \todo all of it
+	def jobData(self)
+
+	## jobDispatcher
+	# submits and valides JSON job input files via 'parsed; JSON dictionary
+	# jData: dictionary with all parsed data contained in the *.json file
+	# \todo make jData compiled from user data - jobData method 
+	def jobDispatcher(self, jData):
+		self.loadServerConfFile() # reload the configuration file before job submission
+		# Do some error trapping and logging
+		if ("InternalUse" not in jData.keys()):
+			logging.error("jobDispatcher call from %s@%s: 'InternalUse' block not present the passed %s file"%(jData["InternalUse"]["clientName"],jData["InternalUse"]["clientMachine"],jData["InternalUse"]["jsonFileName"]))
+			return
+		if ("jsonFileType" not in jData["InternalUse"].keys()):
+			logging.error("jobDispatcher call from %s@%s: 'jsonFileType' entry not present the passed %s file"%(jData["InternalUse"]["clientName"],jData["InternalUse"]["clientMachine"],jData["InternalUse"]["jsonFileName"]))
+			return
