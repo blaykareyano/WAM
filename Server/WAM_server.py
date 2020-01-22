@@ -1,39 +1,42 @@
 #!/usr/bin/python
 
-## @package WAMServer
-## @brief 
-# Manages work allocation and acts as portal for all computational machines on the network
-#
+## WAMServer Package
+# Manages work allocation and defines all methods for job submission and allocation
+
+## Libraries
 # \todo library definitions
-from utils.parseJSONFile import parseJSONFile
-from utils.emailMisc import sendEmailMsg
+from __future__ import absolute_import
+from __future__ import print_function
 import Pyro4
+import time
 import threading
 import sys
 import os
+# from utils.parseJSONFile import parseJSONFile
+# from utils.emailMisc import sendEmailMsg
 import logging
 import pickle
+import pwd
 
 ## [Pyro Documentation](https://pythonhosted.org/Pyro4/index.html, "Pyro Documentation")
-#
-## signature preventing arbitrary connections  
-Pyro4.config.HMAC_KEY = 'W4MquestW4MintegrityW4M'
-## network communication timeout in seconds
-Pyro4.config.COMMTIMEOUT = 10.0
-## current version number
-version = 0.0
+# allows for objects to talk to each other over a network
+# "You can just use normal Python method calls to call objects on other machines!"
+Pyro4.config.HMAC_KEY = 'W4MquestW4MintegrityW4M' 	# signature preventing arbitrary connections  
+Pyro4.config.COMMTIMEOUT = 10.0 					# network communication timeout in seconds
+version = 0.0 										# current version number
 
 ## WAM Server Class:
 # Contains all methods for WAM server  
 class WAMServer(object):
+	
 	## __init__ method
 	# initialize the values of instance members for the new object  
 	def __init__(self):
 		self.serverScriptDirectory = os.path.dirname(os.path.realpath(__file__))	# directory where this file is located
 		self.confFileLock = threading.Lock()		# thread lock server configuration file
 		self.loadServerConfFile()					# load server configuration file
-        self.jobs = []								# initialize SerializedJobList
-        self.serializeJobListLock = threading.Lock()# thread lock used to safely serialize self.jobs list
+		self.jobs = []								# initialize SerializedJobList
+		self.serializeJobListLock = threading.Lock()# thread lock used to safely serialize self.jobs list
 		self.serializeCounterLock = threading.Lock()# thread lock used to safely serialize the JobID counter
 		self.loadSerializedCounter()				# loads job ID counter
 		self.loadSerializedJobList()				# loads self.jobs
@@ -44,7 +47,7 @@ class WAMServer(object):
 		if ("failsafe" in self.serverConf.keys()):
 			if ((len(self.jobs) > 0) and (self.serverConf["failsafe"] is True)):
 				runFailSafe = True
-					for job in self.jobs:
+				for job in self.jobs:
 					job["InternalUse"]["failsafe"] = True               
 		else:
 			self.jobs = [] # fail safe is not present in config file: set default to disabled
@@ -52,7 +55,7 @@ class WAMServer(object):
 		self.currentJobID = None					# the job id for the current job that is running
 		self.currentSubProcess = None				# holds subprocess currently running solver in case of kill 
 		self.start = datetime.datetime.now()		# init stop watch with dummy value
-		self.jobsCompleted = []
+		self.jobsCompleted = []						# initialize variable
 		self.CPULock = threading.Lock()				# thread lock to restrict CPU access while running an analysis
 		self.jobListLock = threading.Lock()			# thread lock to restict access to jobs list while in use
 		self.jobsCompletedListLock = threading.Lock()	# thread lock to restict access to jobsCompleted list while in use
@@ -75,13 +78,13 @@ class WAMServer(object):
 		self.nsThread = None  # name server connection/reconnection thread
 
 	## about method
-	# Returns licens and version information
-	# \todo Need reference to Bruno's JSS Server?
+	# Returns license and version information
 	# \todo add anyone else working on WAM
 	def about(self):
 		return """
 WAM - Workload Allocation Manager - Version %s
-Copyright (C) 2020 - Blake N. Arellano - blake.n.arellano@gmail.com
+Copyright (C) 2020
+Blake N. Arellano - blake.n.arellano@gmail.com
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -130,7 +133,7 @@ MA  02110-1301, USA.
 
 	## shakeHands method
 	# tests if the client can connect to the server
-    def shakeHands(self, clientName, clientMachine):
+	def shakeHands(self, clientName, clientMachine):
 		logging.info("Shook hands with client %s@%s"%(clientName,clientMachine))
 		return True
 
@@ -187,23 +190,53 @@ MA  02110-1301, USA.
 			clientWorkingDir = job["InternalUse"]["clientWorkingDir"]   
 			lckFile = os.path.join(clientWorkingDir,lckFile)  
 			if os.path.isfile(lckFile):
-			os.remove(lckFile)
+				os.remove(lckFile)
+
+	## queryAll method
+	# returns computer info (cores and mem); job(s) currently running; job(s) in queue
+	def queryAll(self):
+		pass
 
 	## jobData method
 	# takes user input to define job variables
 	# \todo all of it
-	def jobData(self)
+	def jobData(self):
+		pass
 
-	## jobDispatcher
-	# submits and valides JSON job input files via 'parsed; JSON dictionary
-	# jData: dictionary with all parsed data contained in the *.json file
-	# \todo make jData compiled from user data - jobData method 
-	def jobDispatcher(self, jData):
-		self.loadServerConfFile() # reload the configuration file before job submission
-		# Do some error trapping and logging
-		if ("InternalUse" not in jData.keys()):
-			logging.error("jobDispatcher call from %s@%s: 'InternalUse' block not present the passed %s file"%(jData["InternalUse"]["clientName"],jData["InternalUse"]["clientMachine"],jData["InternalUse"]["jsonFileName"]))
-			return
-		if ("jsonFileType" not in jData["InternalUse"].keys()):
-			logging.error("jobDispatcher call from %s@%s: 'jsonFileType' entry not present the passed %s file"%(jData["InternalUse"]["clientName"],jData["InternalUse"]["clientMachine"],jData["InternalUse"]["jsonFileName"]))
-			return
+	## inpTransfer method
+	# Transfers input files designated by user to chosen machine
+	# \todo everything
+	def inpTransfer(self):
+		pass
+
+	## jobTransfer method
+	# Transfers all job files from "Run" directory to server for user download
+	# \todo everything
+	def jobTransfer(self):
+		pass
+
+	## addJobtoQueue method
+	# 
+	def addJobToQueue(self, job):
+		pass
+
+	## __runJob method
+	# places job in queue and attempts to run it
+	# \todo take relevant bits from JSS
+	# \todo everything else
+	def __runJob(self, job):
+		pass
+
+	## cleanUp method
+	# deletes all files from "Run" folder after job completion and transfer
+	# \todo everything
+	def cleanUp(self):
+		pass
+
+	## killJob Method
+	# kills job with same ID
+	# only user that submitted job can kill it
+	# \todo take relevant bits from JSS
+	# \todo everything else
+	def killJob(self, jobID, uName):
+		pass
