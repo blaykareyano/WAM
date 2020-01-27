@@ -6,7 +6,7 @@
 
 
     "localhost" : {                         // server configuration
-        "networkName"   : "cougar",         // Network DNS name for the server
+        "hostName"      : "cougar",         // Network DNS name for the server
         "maxCPUs"       : 18,               // max number of CPUs that are allowed to submit jobs
         "maxGPUs"       : 0,                // max number of GPUs that are allowed to submit jobs
         "maxMEM"        : 128,              // amount of install RAM in Gb
@@ -20,17 +20,17 @@
                                           // a name server. You probably want
                                           // to do this if you want to call 
                                           // the jss server from a remote jss client
-        "nameServerIP" : "10.200.209.27", // network number for the machine where the 
+        "nameServerIP" : "10.200.209.12", // network number for the machine where the 
                                           // name server resides  
         "nameServerPort" : 9999,           // port # where the name server is listening for incoming connections 
 
-        "quitJSSOnNameServerConnectionError" : false, // should we stop the jss server
+        "quitOnNameServerConnectionError" : false, // should we stop the jss server
                                                     // in case we cannot connect 
                                                     // to the name server? 
 
         "reconnectToNameServer_minutes" : 2  // check to see every N minutes if the jss server running on this computer
                                              // is registered with the name server. We will attempt to register/reregister
                                              // with the name server the jss sever in case it is not registred with the name server.
-    }, 
+    } 
 
 }
