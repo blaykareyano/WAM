@@ -57,17 +57,17 @@ def main():
 	try: # use network ip addr. if connected to network
 		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
+		print("connected to {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
 	except: # otherwise use local host
 		daemon = Pyro4.Daemon(port=server_daemon.serverConf["usePortNumber"])
+		print("connected to localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
 
 	daemon_uri = daemon.register(server_daemon)
-
 	server_daemon.connectToNameServer(daemon_uri)
 
 	print("Server is running")
-	
-	[compName, cpus, mem, IP] = server_daemon.getComputerInfo()
-	print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:		{3}".format(compName,cpus,mem,IP))
+	print("uri: {0}".format(daemon_uri))
+
 
 	daemon.requestLoop()
 

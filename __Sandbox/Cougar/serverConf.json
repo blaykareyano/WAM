@@ -2,7 +2,7 @@
     
     "fileVersion" : "0.1",
 
-    "usePortNumber" : 9998,           // port number that the jss server will be listening to
+    "usePortNumber" : 9998,           // port number that the WAM server will be listening to
 
 
     "localhost" : {                         // server configuration
@@ -20,9 +20,9 @@
                                           // a name server. You probably want
                                           // to do this if you want to call 
                                           // the jss server from a remote jss client
-        "nameServerIP" : "10.200.209.12", // network number for the machine where the 
+        "nameServerIP" : "10.200.209.117",// network number for the machine where the 
                                           // name server resides  
-        "nameServerPort" : 9999,           // port # where the name server is listening for incoming connections 
+        "nameServerPort" : 9998,          // port # where the name server is listening for incoming connections 
 
         "quitOnNameServerConnectionError" : false, // should we stop the jss server
                                                     // in case we cannot connect 

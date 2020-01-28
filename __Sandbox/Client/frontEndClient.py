@@ -26,8 +26,8 @@ class frontEndClient(object):
 		for serverDaemon, serverDaemon_uri in ns.list(prefix="WAM.").items():
 			with Pyro4.Proxy(serverDaemon_uri) as currentServer:
 				try:
-					serverInfo = currentServer.getComputerInfo()
-					print("{0} ---\ncores: {1}\nmem: {2}Gb\nIP: {3}\n".format(serverInfo[0],serverInfo[1],serverInfo[2],serverInfo[3]))
+					[compName, cpus, mem, IP] = currentServer.getComputerInfo()
+					print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:		{3}".format(compName,cpus,mem,IP))
 				except Exception as e:
 					print("ERROR:	Unable to connect to server {0}".format(serverDaemon))
 					print(e)
