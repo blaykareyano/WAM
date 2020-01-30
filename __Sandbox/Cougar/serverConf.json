@@ -22,13 +22,13 @@
                                           // the jss server from a remote jss client
         "nameServerIP" : "10.200.209.117",// network number for the machine where the 
                                           // name server resides  
-        "nameServerPort" : 9998,          // port # where the name server is listening for incoming connections 
+        "nameServerPort" : 9090,          // port # where the name server is listening for incoming connections 
 
-        "quitOnNameServerConnectionError" : false, // should we stop the jss server
+        "quitOnNameServerConnectionError" : true, // should we stop the jss server
                                                     // in case we cannot connect 
                                                     // to the name server? 
 
-        "reconnectToNameServer_minutes" : 2  // check to see every N minutes if the jss server running on this computer
+        "reconnectToNameServer_minutes" : 1  // check to see every N minutes if the jss server running on this computer
                                              // is registered with the name server. We will attempt to register/reregister
                                              // with the name server the jss sever in case it is not registred with the name server.
     } 

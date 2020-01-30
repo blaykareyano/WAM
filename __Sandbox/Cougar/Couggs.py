@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import Pyro4
+import sys
 import os
 from parseJSONFile import parseJSONFile
 import threading
@@ -23,19 +24,24 @@ class serverDaemon(object):
 			def nsReregister(daemon_uri):
 				while 1:
 					self.loadServerConfFile()
-					reconnectTime_sec = self.serverConf["nameServer"]["reconnenctToNameServer_minutes"]*60
+					reconnectTime_sec = self.serverConf["nameServer"]["reconnectToNameServer_minutes"]*60
 					try:
-						Pyro4.config.NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
-						Pyro4.config.NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
+						# Pyro4.config.NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
+						# Pyro4.config.NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
+						print("attempting to locate Name Server")
 						ns = Pyro4.locateNS()
+						print("connected to name server {0}:{1}".format(Pyro4.config.NS_HOST,Pyro4.config.NS_PORT))
 						ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
+						print(ns)
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
-							print("***ERROR: Cannot connect to name server\nExiting...")
+							print("***ERROR: Cannot connect to name server! Exiting script.")
 							sys.exit(1)
-						print("Will attempt to reconnect to name server (%s) in %.2f minutes"%(self.serverConf["nameServer"]["nameServerIP"], self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
+						print("Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(Pyro4.config.NS_HOST, Pyro4.config.NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
 					time.sleep(reconnectTime_sec)
 			self.nsThread = threading.Thread(target=nsReregister, args=(daemon_uri,))
+			self.nsThread.setDaemon(True)
+			self.nsThread.start()
 
 	def getComputerInfo(self):
 		# \todo get variable input from serverConf JSON dictionary
@@ -48,7 +54,6 @@ class serverDaemon(object):
 	def loadServerConfFile(self):
 		with self.confFileLock:
 			filePath = os.path.join(self.serverScriptDirectory,"serverConf.json")
-			print(filePath)
 			self.serverConf = parseJSONFile(filePath)
 
 def main():
@@ -57,17 +62,16 @@ def main():
 	try: # use network ip addr. if connected to network
 		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
-		print("connected to {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
+		print("Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
 	except: # otherwise use local host
 		daemon = Pyro4.Daemon(port=server_daemon.serverConf["usePortNumber"])
-		print("connected to localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
+		print("Starting daemon on localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
 
 	daemon_uri = daemon.register(server_daemon)
 	server_daemon.connectToNameServer(daemon_uri)
 
-	print("Server is running")
+	print("Daemon is running")
 	print("uri: {0}".format(daemon_uri))
-
 
 	daemon.requestLoop()
 

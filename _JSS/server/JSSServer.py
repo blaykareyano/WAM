@@ -115,7 +115,6 @@ class JSSServer(object):
 
             self.nsThread.start()
 
-
     def about(self):
         """Returns license and version information"""
         return """
@@ -137,7 +136,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 MA  02110-1301, USA.
         """%(version)
-
 
     def loadSerializedCounter(self,filePath = "/opt/JSS/server/counter.p"):
         """Loads the JobID counter from a pickle file; used to init the persistent 
@@ -179,7 +177,6 @@ MA  02110-1301, USA.
                 pickle.dump(self.jobs, open(filePath,"wb"))
             except:
                 logging.error("Unable to serialize (i.e., pickle) self.jobs")
-
 
     def getQueue(self):
         """Returns a table with the queue status of the jobs"""
@@ -242,8 +239,6 @@ MA  02110-1301, USA.
             lckFile = os.path.join(clientWorkingDir,lckFile)  
             if os.path.isfile(lckFile):
                 os.remove(lckFile)
-
-
 
     def addJobToQueue(self, job):
         with self.jobListLock:
@@ -433,6 +428,7 @@ MA  02110-1301, USA.
                     os.chown(stdOutFile, currentUserID, -1)
                     os.chown(stdErrorFile, currentUserID, -1)   
                     try:
+                        print(cmd)
                         self.currentSubProcess = subprocess.Popen(cmd,stdout=out,stderr=err, preexec_fn=demote(user_uid, user_gid), cwd=cwd, env=env)  # using wait so the program does not move forward
                         self.currentSubProcess.wait()
                         self.currentSubProcess = None
