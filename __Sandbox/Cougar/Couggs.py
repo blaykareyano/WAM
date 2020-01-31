@@ -8,9 +8,12 @@ import threading
 import socket
 import time
 
+Pyro4.config.COMMTIMEOUT = 10.0
+
 @Pyro4.expose
 class serverDaemon(object):
 	def __init__(self):
+		self.HMAC_KEY = "WAM!WAM!WAM!"
 		self.serverScriptDirectory = os.path.dirname(os.path.realpath(__file__))
 		self.confFileLock = threading.Lock()
 		self.loadServerConfFile()
@@ -26,18 +29,17 @@ class serverDaemon(object):
 					self.loadServerConfFile()
 					reconnectTime_sec = self.serverConf["nameServer"]["reconnectToNameServer_minutes"]*60
 					try:
-						# Pyro4.config.NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
-						# Pyro4.config.NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
-						print("attempting to locate Name Server")
-						ns = Pyro4.locateNS()
-						print("connected to name server {0}:{1}".format(Pyro4.config.NS_HOST,Pyro4.config.NS_PORT))
+						Pyro4.config.NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
+						Pyro4.config.NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
+						ns = Pyro4.locateNS(hmac_key=self.HMAC_KEY)
+						print("--> Connecting to name server {0}:{1} with HMAC key {2}".format(Pyro4.config.NS_HOST,Pyro4.config.NS_PORT,self.HMAC_KEY))
 						ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
 						print(ns)
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
-							print("***ERROR: Cannot connect to name server! Exiting script.")
+							print("*** ERROR: Cannot connect to name server! Exiting script.")
 							sys.exit(1)
-						print("Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(Pyro4.config.NS_HOST, Pyro4.config.NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
+						print("--> Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(Pyro4.config.NS_HOST, Pyro4.config.NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
 					time.sleep(reconnectTime_sec)
 			self.nsThread = threading.Thread(target=nsReregister, args=(daemon_uri,))
 			self.nsThread.setDaemon(True)
@@ -62,16 +64,16 @@ def main():
 	try: # use network ip addr. if connected to network
 		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
-		print("Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
+		print("--> Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
 	except: # otherwise use local host
 		daemon = Pyro4.Daemon(port=server_daemon.serverConf["usePortNumber"])
-		print("Starting daemon on localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
+		print("--> Starting daemon on localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
 
 	daemon_uri = daemon.register(server_daemon)
 	server_daemon.connectToNameServer(daemon_uri)
 
-	print("Daemon is running")
-	print("uri: {0}".format(daemon_uri))
+	print("--- Daemon started successfully")
+	print("--- INFO: uri: {0}".format(daemon_uri))
 
 	daemon.requestLoop()
 
