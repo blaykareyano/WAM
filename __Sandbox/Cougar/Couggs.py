@@ -29,17 +29,20 @@ class serverDaemon(object):
 					self.loadServerConfFile()
 					reconnectTime_sec = self.serverConf["nameServer"]["reconnectToNameServer_minutes"]*60
 					try:
-						Pyro4.config.NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
-						Pyro4.config.NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
-						ns = Pyro4.locateNS(hmac_key=self.HMAC_KEY)
-						print("--> Connecting to name server {0}:{1} with HMAC key {2}".format(Pyro4.config.NS_HOST,Pyro4.config.NS_PORT,self.HMAC_KEY))
+						NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
+						NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
+						ns = Pyro4.locateNS(host=NS_HOST,port=NS_PORT,hmac_key=self.HMAC_KEY)
+						print("--- Successfully located name server")
+						print("--> Registering with name server {0}:{1}".format(NS_HOST,NS_PORT))
 						ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
+						print("--- Successfully registered with name server")
 						print(ns)
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
 							print("*** ERROR: Cannot connect to name server! Exiting script.")
+							print("*** INFO: Host: {0}	Port: {1}	HMAC key: {2}".format(NS_HOST,NS_PORT,self.HMAC_KEY))
 							sys.exit(1)
-						print("--> Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(Pyro4.config.NS_HOST, Pyro4.config.NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
+						print("--> Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(NS_HOST, NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
 					time.sleep(reconnectTime_sec)
 			self.nsThread = threading.Thread(target=nsReregister, args=(daemon_uri,))
 			self.nsThread.setDaemon(True)
