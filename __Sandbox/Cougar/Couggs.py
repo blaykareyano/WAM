@@ -10,7 +10,6 @@ import time
 
 Pyro4.config.COMMTIMEOUT = 10.0
 
-@Pyro4.expose
 class serverDaemon(object):
 	def __init__(self):
 		self.HMAC_KEY = "WAM!WAM!WAM!"
@@ -31,12 +30,13 @@ class serverDaemon(object):
 					try:
 						NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
 						NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
-						ns = Pyro4.locateNS(host=NS_HOST,port=NS_PORT,hmac_key=self.HMAC_KEY)
+						# ns = Pyro4.locateNS(host=NS_HOST,port=NS_PORT,hmac_key=self.HMAC_KEY)
+						ns = Pyro4.locateNS() # search for local host
 						print("--- Successfully located name server")
-						print("--> Registering with name server {0}:{1}".format(NS_HOST,NS_PORT))
+						print("--- INFO: {0}".format(ns))
+						print("--> Registering with name server: {0}:{1}".format(NS_HOST,NS_PORT))						
 						ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
 						print("--- Successfully registered with name server")
-						print(ns)
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
 							print("*** ERROR: Cannot connect to name server! Exiting script.")
@@ -48,6 +48,13 @@ class serverDaemon(object):
 			self.nsThread.setDaemon(True)
 			self.nsThread.start()
 
+	## shakeHands Methods
+	# Quick test to see if front end client can connect to server
+	@Pyro4.expose
+	def shakeHands(self):
+		return True
+
+	@Pyro4.expose
 	def getComputerInfo(self):
 		# \todo get variable input from serverConf JSON dictionary
 		compName = self.serverConf["localhost"]["hostName"]
