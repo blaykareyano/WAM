@@ -11,38 +11,47 @@ class frontEndClient(object):
 	def findServers(self):
 		sys.excepthook = Pyro4.util.excepthook
 		ns = Pyro4.locateNS()
-		serverDaemons = []
-		for serverDaemon, serverDaemon_uri in ns.list(prefix="WAM.").items():
-			print("--- INFO: Found {0}".format(serverDaemon))
-			serverDaemons.append(serverDaemon_uri)
-		if not serverDaemons:
-			raise ValueError("*** ERROR: No server daemons found!")
+
+		daemon_uris = []
+		daemonNames = []
+
+		for daemonName, daemon_uri in ns.list(prefix="WAM.").items():
+			print("--- INFO: Found {0}".format(daemonName))
+			daemon_uris.append(daemon_uri)
+			daemonNames.append(daemonName)
+
+		if not daemon_uris:
+			print("*** ERROR: No server daemons found!")
+		
+		daemons = zip(daemon_uris,daemonNames)
+		return daemons
 
 	## queryAllServers Method
 	# Looks through all servers and gathers machine info (cores, avail. memory, IP addr)
 	def queryAllServers(self):
 		sys.excepthook = Pyro4.util.excepthook
-		ns = Pyro4.locateNS()
-		for serverDaemon, serverDaemon_uri in ns.list(prefix="WAM.").items():
-			with Pyro4.Proxy(serverDaemon_uri) as currentServer:
+		daemons = self.findServers()
+
+		for daemon_uri, daemonName in daemons:
+			with Pyro4.Proxy(daemon_uri) as currentServer:
 				try:
+					print(currentServer)
 					currentServer.shakeHands()
-				except:
-					print("*** ERROR: Unable to connect to server {0}".format(serverDaemon_uri))
+				except Exception as e:
+					print("*** ERROR: Unable to connect to server {0}".format(daemonName))
+					print("*** INFO: {0}".format(e))
 					return
 
-				try:
-					[compName, cpus, mem, IP] = currentServer.getComputerInfo()
-					print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:		{3}".format(compName,cpus,mem,IP))
-				except Exception as e:
-					print("*** ERROR: Unable to connect to server {0}".format(serverDaemon))
-					print("*** INFO: {0}".format(e))
+				[compName, cpus, mem, IP] = currentServer.getComputerInfo()
+				print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:		{3}".format(compName,cpus,mem,IP))
+
+
 
 def main():
 	front_end_client = frontEndClient()
 
-	print("--> Looking for server daemons")
-	front_end_client.findServers()
+	# print("--> Looking for server daemons")
+	# front_end_client.findServers()
 
 	print("--> Gathering HPC info")
 	front_end_client.queryAllServers()

@@ -10,6 +10,7 @@ import time
 
 Pyro4.config.COMMTIMEOUT = 10.0
 
+@Pyro4.expose
 class serverDaemon(object):
 	def __init__(self):
 		self.HMAC_KEY = "WAM!WAM!WAM!"
