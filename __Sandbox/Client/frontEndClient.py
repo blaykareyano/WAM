@@ -33,17 +33,18 @@ class frontEndClient(object):
 		daemons = self.findServers()
 
 		for daemon_uri, daemonName in daemons:
-			with Pyro4.Proxy(daemon_uri) as currentServer:
-				try:
-					print(currentServer)
-					currentServer.shakeHands()
-				except Exception as e:
-					print("*** ERROR: Unable to connect to server {0}".format(daemonName))
-					print("*** INFO: {0}".format(e))
-					return
+			currentServer = Pyro4.Proxy(daemon_uri)
 
-				[compName, cpus, mem, IP] = currentServer.getComputerInfo()
-				print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:		{3}".format(compName,cpus,mem,IP))
+			try:
+				print(currentServer)
+				currentServer.shakeHands()
+			except Exception as e:
+				print("*** ERROR: Unable to connect to server {0}".format(daemonName))
+				print("*** INFO: {0}".format(e))
+				return
+
+			[compName, cpus, mem, IP] = currentServer.getComputerInfo()
+			print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:	{3}".format(compName,cpus,mem,IP))
 
 
 

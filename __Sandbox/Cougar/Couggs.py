@@ -19,43 +19,41 @@ class serverDaemon(object):
 		self.loadServerConfFile()
 		self.nsThread = None
 
-	## connectToNameServer Method
-	# spawns a thread to continously attempt to connect to the name server
-	def connectToNameServer(self, daemon_uri):
-		registerWithNameServer = self.serverConf["nameServer"]["registerWithNameServer"]
-		if registerWithNameServer:
-			def nsReregister(daemon_uri):
-				while 1:
-					self.loadServerConfFile()
-					reconnectTime_sec = self.serverConf["nameServer"]["reconnectToNameServer_minutes"]*60
-					try:
-						NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
-						NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
-						# ns = Pyro4.locateNS(host=NS_HOST,port=NS_PORT,hmac_key=self.HMAC_KEY)
-						ns = Pyro4.locateNS() # search for local host
-						print("--- Successfully located name server")
-						print("--- INFO: {0}".format(ns))
-						print("--> Registering with name server: {0}:{1}".format(NS_HOST,NS_PORT))						
-						ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
-						print("--- Successfully registered with name server")
-					except:
-						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
-							print("*** ERROR: Cannot connect to name server! Exiting script.")
-							print("*** INFO: Host: {0}	Port: {1}	HMAC key: {2}".format(NS_HOST,NS_PORT,self.HMAC_KEY))
-							sys.exit(1)
-						print("--> Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(NS_HOST, NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
-					time.sleep(reconnectTime_sec)
-			self.nsThread = threading.Thread(target=nsReregister, args=(daemon_uri,))
-			self.nsThread.setDaemon(True)
-			self.nsThread.start()
+	# ## connectToNameServer Method
+	# # spawns a thread to continously attempt to connect to the name server
+	# def connectToNameServer(self, daemon_uri):
+	# 	registerWithNameServer = self.serverConf["nameServer"]["registerWithNameServer"]
+	# 	if registerWithNameServer:
+	# 		def nsReregister(daemon_uri):
+	# 			while 1:
+	# 				self.loadServerConfFile()
+	# 				reconnectTime_sec = self.serverConf["nameServer"]["reconnectToNameServer_minutes"]*60
+	# 				try:
+	# 					NS_HOST = self.serverConf["nameServer"]["nameServerIP"]
+	# 					NS_PORT = self.serverConf["nameServer"]["nameServerPort"]
+	# 					# ns = Pyro4.locateNS(host=NS_HOST,port=NS_PORT,hmac_key=self.HMAC_KEY)
+	# 					ns = Pyro4.locateNS() # search for local host
+	# 					print("--- Successfully located name server")
+	# 					print("--- INFO: {0}".format(ns))
+	# 					print("--> Registering with name server: {0}:{1}".format(NS_HOST,NS_PORT))						
+	# 					ns.register("WAM.{0}".format(self.serverConf["localhost"]["hostName"]), daemon_uri)
+	# 					print("--- Successfully registered with name server")
+	# 				except:
+	# 					if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
+	# 						print("*** ERROR: Cannot connect to name server! Exiting script.")
+	# 						print("*** INFO: Host: {0}	Port: {1}	HMAC key: {2}".format(NS_HOST,NS_PORT,self.HMAC_KEY))
+	# 						sys.exit(1)
+	# 					print("--> Will attempt to reconnect to name server (%s:%s) in %.2f minutes"%(NS_HOST, NS_PORT, self.serverConf["nameServer"]["reconnectToNameServer_minutes"]))
+	# 				time.sleep(reconnectTime_sec)
+	# 		self.nsThread = threading.Thread(target=nsReregister, args=(daemon_uri,))
+	# 		self.nsThread.setDaemon(True)
+	# 		self.nsThread.start()
 
 	## shakeHands Methods
 	# Quick test to see if front end client can connect to server
-	@Pyro4.expose
 	def shakeHands(self):
 		return True
 
-	@Pyro4.expose
 	def getComputerInfo(self):
 		# \todo get variable input from serverConf JSON dictionary
 		compName = self.serverConf["localhost"]["hostName"]
@@ -72,14 +70,15 @@ class serverDaemon(object):
 def main():
 	server_daemon = serverDaemon()
 
-	try: # use network ip addr. if connected to network
-		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
-		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
-		print("--> Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
-	except: # otherwise use local host
-		daemon = Pyro4.Daemon(port=server_daemon.serverConf["usePortNumber"])
-		print("--> Starting daemon on localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
+	# try: # use network ip addr. if connected to network
+	# 	myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
+	# 	daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
+	# 	print("--> Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
+	# except: # otherwise use local host
+	# 	daemon = Pyro4.Daemon(port=server_daemon.serverConf["usePortNumber"])
+	# 	print("--> Starting daemon on localhost:{0}".format(server_daemon.serverConf["usePortNumber"]))
 
+	daemon = Pyro4.Daemon()
 	daemon_uri = daemon.register(server_daemon)
 	server_daemon.connectToNameServer(daemon_uri)
 
