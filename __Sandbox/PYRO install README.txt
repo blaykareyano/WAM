@@ -1,23 +1,28 @@
 1-) install Pyro4 and other needed packages:
-	a-) sudo yum install python-setuptools
-	b-) sudo yum install python-pip
-	c-) sudo pip install serpent==1.28
-	d-) sudo pip install Pyro4
-	e-) sudo yum install ufw
+	a-) install python packaging library 
+		$ sudo yum install python-setuptools
+	b-) install python package installer pip
+		$ sudo yum install python-pip
+	c-) install serpent (older version needed for python 2.7)
+		$ sudo pip install serpent==1.28
+	d-) Pyro4 install using pip
+		$ sudo pip install Pyro4
 
 2-) install Pyro4 naming server:
-	a-) sudo cp ./pyro4NamingServer /etc/init.d
-	b-) sudo chmod +x /etc/init.d/pyro4NamingServer
-	c-) sudo /etc/init.d/pyro4NamingServer start
+	a-) copy the naming server script to init.d
+		$ sudo cp ./pyro4NamingServer /etc/init.d
+	b-) change permissions to make executable
+		$ sudo chmod +x /etc/init.d/pyro4NamingServer
+	c-) start up the executable
+		$ sudo /etc/init.d/pyro4NamingServer start
 
 3-) set firewall settings
-	a-) sudo ufw status
-		i-) should report inactive
-	b-) sudo ufw default deny incoming
-	c-) sudo ufw default allow outgoing
-	d-) sudo ufw allow ssh
-	e-) sudo ufw allow 9999
-	f-) sudo ufw status
-		i-) should show all changes
-	g-) sudo ufw enable
-	h-) sudo systemctl enable ufw
+	a-) check curren state of firewall
+		$ sudo firewall-cmd --state
+		-> should report: running
+	b-) temporarily stop: 
+		$ sudo systemctl stop firewalld
+	c-) disable at startup: 
+		$ sudo systemctl disable firewalld
+	d-) mask to prevent startup from other services: 
+		$ sudo systemctl mask --now firewalld

@@ -1,57 +1,17 @@
 {
     
     "fileVersion" : "0.1",
+    "usePortNumber" : 9998,                 // port number that the WAM daemon will listen to
 
-    "usePortNumber" : 9998,           // port number that the jss server will be listening to
-
-
-    "localhost" : {                      // server configuration
-        "OperatingSystem" : "linux",     // What type of OS are we running on this server? Currently only Linux is supported
-        "networkName": "leopard",        // Network DNS name for the server
-        "maxCPUs" : 4,                   // max number of CPUs that are allowed to submit jobs
-        "maxGPUs" : 1,                   // max number of GPUs that are allowed to submit jobs, 
-        "logFileFile" : "server.log"  // file
-    }, 
-
-    // TEAM email relay server
-    
-    "emailServer" : {                          // outbound email server
-        "SMTPServer" : "TeamMailRelay.teamindustrialservices.com",   // smtp server address (ex: smtp.yahoo.com)
-        "SMTPPort" : "25",                     // port number on smtp server
-        "username" : "analysissubmissionsystem@teaminc.com",                       
-        "password" : "",                // leave password blank if the server does
-                                        // not require authentication
-        "emailInfoEncrypted" : false,   // is the above email configuration information b64 encrypted? If false, 
-                                        // it should be specified as plain text (bad idea)
-        "useStarttls" : false           // does the server use startls encryption? (http://en.wikipedia.org/wiki/STARTTLS)      
-    },
-
-    // Default paths or environment variables to solver executables on this machine:
-    "solverPaths" : {
-        "abaqus": "/var/DassaultSystemes/SIMULIA/Commands/abaqus" // Abaqus solver path
+    "localhost" : {
+        "logFileFile"   : "server.log"      // log file name
     }, 
 
     "nameServer" : {
-        "registerWithNameServer" : true,    // should we register the uri with 
-                                            // a name server. You probably want
-                                            // to do this if you want to call 
-                                            // the jss server from a remote jss client
-        "nameServerIP" : "10.200.209.251",  // network number for the machine where the 
-                                            // name server resides (bonobo)  
-        "nameServerPort" : 9999,            // port # where the name server is listening for incoming connections 
-
-        "quitJSSOnNameServerConnectionError" : false,   // should we stop the jss server
-                                                        // in case we cannot connect 
-                                                        // to the name server? 
-
-        "reconnectToNameServer_minutes" : 2  // check to see every N minutes if the jss server running on this computer
-                                             // is registered with the name server. We will attempt to register/reregister
-                                             // with the name server the jss sever in case it is not registred with the name server.
-
-
-    }, 
-
-    "failsafe" : true  // Failsafe mode: should the server try to resubmit the job if the
-                       // server is restarted and the job has not completed?
-
+        "registerWithNameServer" : true,    // register daemon with name server? (yes you should)
+        "nameServerIP" : "10.200.209.12",   // name server IP address
+        "nameServerPort" : 9999,            // name server port # 
+        "quitOnNameServerConnectionError" : false, // stop server in case of failure?
+        "reconnectToNameServer_minutes" : 1 // check connection to name server every N minutes
+    } 
 }

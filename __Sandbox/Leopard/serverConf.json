@@ -2,15 +2,15 @@
     
     "fileVersion" : "0.1",
 
-    "usePortNumber" : 9996,           // port number that the WAM server will be listening to
+    "usePortNumber" : 9998,           // port number that the WAM server will be listening to
 
 
     "localhost" : {                         // server configuration
-        "hostName"      : "cougar",         // Network DNS name for the server
-        "maxCPUs"       : 18,               // max number of CPUs that are allowed to submit jobs
+        "hostName"      : "leopard",         // Network DNS name for the server
+        "maxCPUs"       : 6,               // max number of CPUs that are allowed to submit jobs
         "maxGPUs"       : 0,                // max number of GPUs that are allowed to submit jobs
-        "maxMEM"        : 128,              // amount of install RAM in Gb
-        "IPaddr"        : "10.200.209.12",  // IP address of the machine
+        "maxMEM"        : 64,              // amount of install RAM in Gb
+        "IPaddr"        : "10.200.209.20",  // IP address of the machine
         "logFileFile"   : "server.log"      // file
     }, 
 

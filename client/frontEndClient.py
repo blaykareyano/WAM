@@ -1,6 +1,14 @@
+#!/usr/bin/python
+
+# Futures
 from __future__ import print_function
-import Pyro4
+
+# Standard Libraries
 import sys
+
+# 3rd Party Packages
+import Pyro4
+from tabulate import tabulate
 
 class frontEndClient(object):
 	def __init__(self):
@@ -16,7 +24,6 @@ class frontEndClient(object):
 		daemonNames = []
 
 		for daemonName, daemon_uri in ns.list(prefix="WAM.").items():
-			print("--- INFO: Found {0}".format(daemonName))
 			daemon_uris.append(daemon_uri)
 			daemonNames.append(daemonName)
 
@@ -30,27 +37,37 @@ class frontEndClient(object):
 	# Looks through all servers and gathers machine info (cores, avail. memory, IP addr)
 	def queryAllServers(self):
 		sys.excepthook = Pyro4.util.excepthook
-		daemons = self.findServers()
+		
+		# Initialize the table
+		headers = ["Host Name", "IP Address", "Cores", "Total Memory", "Job Queue Length"]
+		table = []
 
+		# Find all daemon servers and loop through them
+		daemons = self.findServers()
 		for daemon_uri, daemonName in daemons:
 			currentServer = Pyro4.Proxy(daemon_uri)
 
 			try:
-				currentServer.shakeHands()
+				[compName, cpus, mem, IP] = currentServer.getComputerInfo()
+				
+				tmp = []
+				tmp.append(compName)
+				tmp.append(IP)
+				tmp.append(cpus)
+				tmp.append(str(mem) + " Gb")
+				tmp.append("TODO")
+
+				table.append(tmp[:])
+
 			except Exception as e:
-				print("*** ERROR: Unable to connect to server {0}".format(daemonName))
-				print("*** INFO: {0}".format(e))
+				print("*** ERROR: {0}".format(e))
 				return
 
-			[compName, cpus, mem, IP] = currentServer.getComputerInfo()
-			print("{0} -----\ncores:	{1}\nRAM:	{2}\nIP:	{3}".format(compName,cpus,mem,IP))
-
-
+		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
 
 def main():
 	front_end_client = frontEndClient()
 
-	print("--> Gathering HPC info")
 	front_end_client.queryAllServers()
 
 if __name__=="__main__":
