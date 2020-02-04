@@ -19,7 +19,7 @@ import Pyro4
 # Local Source Libraries
 from utils.parseJSONFile import parseJSONFile
 
-# Pyro4 configuration
+# Pyro4 configuration options
 Pyro4.config.COMMTIMEOUT = 10.0
 
 # Daemon class visible to Pyro client
@@ -41,6 +41,11 @@ class serverDaemon(object):
 
 		# name server connect/reconnect thread initialization
 		self.nsThread = None
+
+	def aboutText(self):
+		return """
+		
+		"""
 
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON
