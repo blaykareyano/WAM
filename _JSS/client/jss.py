@@ -127,8 +127,6 @@ class JSSClient(object):
                 self.submit(userArgs.sub) # submit specified json files
                 sys.exit(0)                
 
-
-
     def findfiles(self,which, where='.'):
         '''Returns list of filenames from `where` path matched by 'which'
            shell pattern. Matching is case-insensitive.'''
@@ -140,7 +138,6 @@ class JSSClient(object):
         """Loads the clientConf.json file containing default values"""
         self.confFile = parseJSONFile(os.path.join(self.clientScriptDirectory,r"conf","clientConf.json"))
 
-
     def createBkupJSONFile(self, filepath):
         """Creates a copy of the existing file if present with and '_OLD' to its name. So
         we don't overwrite a user-generated *.json file.
@@ -149,8 +146,6 @@ class JSSClient(object):
             bkupFile = "%s_OLD"%(filepath)
             self.createBkupJSONFile(bkupFile) # make sure we don't overwrite the previous bkup file
             shutil.copyfile(filepath,bkupFile)
-
-
 
     def scanDirForSimulationFiles(self, starFiles = False, abaqusFiles = False, genericFiles = False, files = None):
         """Scans the current directory starccm+ or abaqus files and creates *.json file for each encountered simulation file"""
@@ -348,7 +343,6 @@ class JSSClient(object):
 
         print("%s job file has been created..."%(self.jsonFileName))              
 
-
     def getAboutText(self):
         sys.excepthook = Pyro4.util.excepthook
         JSS_SERVER = Pyro4.Proxy(self.jss_uri) 
@@ -428,7 +422,6 @@ class JSSClient(object):
             self.getQueue()
             print("")
 
-
     def submit(self, jsonFiles = None):
         """ 
         Submits all files in specified in the jsonFiles list, or scans the current working directory for all of the *.json files
@@ -470,7 +463,6 @@ class JSSClient(object):
 
             JSS_SERVER.jobDispatcher(jData)
 
-
     def killJob(self, jobIDs):
         """Connects to the JSS server and kills a job"""
 
@@ -494,11 +486,8 @@ class JSSClient(object):
             msg = JSS_SERVER.killJob(jobID, username)
             print(msg)
 
-        
-
 def main():
     clientSession = JSSClient(sys.argv)
-
 
 if __name__ == '__main__':
     main()

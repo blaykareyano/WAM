@@ -11,12 +11,13 @@ import threading
 import socket
 import time
 import multiprocessing
-from psutil import virtual_memory
+import logging
 
 # 3rd Party Packages
-import Pyro4
+import Pyro4 # https://pypi.org/project/Pyro4/
+from psutil import virtual_memory # https://pypi.org/project/psutil/
 
-# Local Source Libraries
+# Local Source Packages
 from utils.parseJSONFile import parseJSONFile
 
 # Pyro4 configuration options
@@ -26,12 +27,20 @@ Pyro4.config.COMMTIMEOUT = 10.0
 @Pyro4.expose
 class serverDaemon(object):
 	def __init__(self):
-		# directory of this script
+		# define this directory
 		self.serverScriptDirectory = os.path.dirname(os.path.realpath(__file__))
 
-		# lock server conf. file
+		# lock and load server conf. file
 		self.confFileLock = threading.Lock()
 		self.loadServerConfFile()
+
+		# setup log file(s)
+		self.logFile = os.path.join(self.serverScriptDirectory,r"logs",self.serverConf["localhost"]["logFileName"])
+		if not os.path.isfile(self.logFile): # check if log file exists and create one if not
+			open(self.logFile, 'a').close()
+
+		logging.basicConfig(filename=self.logFile,level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+		logging.info("WAM deamon server script started")	
 
 		# gather HPC info
 		self.hostName = socket.gethostname()
@@ -42,11 +51,6 @@ class serverDaemon(object):
 		# name server connect/reconnect thread initialization
 		self.nsThread = None
 
-	def aboutText(self):
-		return """
-		
-		"""
-
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON
 	# starts a thread which continuously checks the connection to the name server
@@ -55,23 +59,21 @@ class serverDaemon(object):
 		if registerWithNameServer:
 			def nsReregister(daemon_uri):
 				while 1:
-					nsHost = self.serverConf["nameServer"]["nameServerIP"]
-					nsPort = self.serverConf["nameServer"]["nameServerPort"]
+					nsHost = self.serverConf["nameServer"]["nameServerIP"] # name server IP address
+					nsPort = self.serverConf["nameServer"]["nameServerPort"] # name server port
 					reconnectTime = self.serverConf["nameServer"]["reconnectToNameServer_minutes"] # time in minutes
 
 					try:
 						ns = Pyro4.locateNS(host=nsHost,port=nsPort)
+						logging.info("found naming server at {0}:{1}".format(nsHost,nsPort))
 						ns.register("WAM.{0}.daemon".format(self.hostName), daemon_uri)
+						logging.info("registered with name server: uri = {0}".format(daemon_uri))
 					
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
-							print("*** ERROR: Cannot connect to name server! Exiting script")
-							print("*** INFO: Host: {0}	Port: {1}".format(nsHost,nsPort))
+							logging.error("Cannot connect to name server ({0}:{1})! Exiting script".format(nsHost,nsPort))
 							sys.exit(1)
-
-						print("*** ERROR: Cannot connect to name server!")
-						print("*** INFO: Host: {0}	Port: {1}".format(nsHost,nsPort))
-						print("*** Attempting to reconnect in {0} minutes".format(reconnectTime))
+						logging.error("Cannot connect to name server ({0}:{1})! Attempting to reconnect in {2} minutes".format(nsHost,nsPort,reconnectTime))
 					
 					time.sleep(reconnectTime*60)
 
@@ -79,12 +81,14 @@ class serverDaemon(object):
 			self.nsThread.setDaemon(False)
 			self.nsThread.start()
 
-	## getComputerInfor Method
+	## getComputerInfo Method
 	# gathers host info to be presented to client
 	def getComputerInfo(self):
+		logging.info("HPC info requested from client")
+		
 		# Get total memory and convert from bytes to Gb
 		totMem = int(self.mem.total/1000000000) # convert from bytes to gb
-		
+
 		# return needed values
 		return [self.hostName, self.cpus, totMem, self.IPaddr]
 
@@ -101,16 +105,15 @@ def main():
 	try: # use network ip addr. if connected to network
 		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
-		print("--> Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
+		logging.info("Starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
 	except: # otherwise send error
-		print("*** ERROR: unable to connect to network")
+		logging.error("unable to connect to network! Exiting script")
 		sys.exit(1)
 
 	daemon_uri = daemon.register(server_daemon,objectId="WAM." + socket.gethostname())
 	server_daemon.connectToNameServer(daemon_uri)
 
-	print("--- Daemon started successfully")
-	print("--- INFO: uri = {0}".format(daemon_uri))
+	logging.info("Daemon started successfully")
 
 	daemon.requestLoop()
 

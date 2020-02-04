@@ -4,7 +4,7 @@
     "usePortNumber" : 9998,                 // port number that the WAM daemon will listen to
 
     "localhost" : {
-        "logFileFile"   : "server.log"      // log file name
+        "logFileName"   : "server.log"      // log file name
     }, 
 
     "nameServer" : {

@@ -9,12 +9,16 @@
 1-) install Pyro4 and other needed packages:
 	a-) install python packaging library 
 		$ sudo yum install python-setuptools
-	b-) install python package installer pip
+	b-) install python development package
+		$ sudo yum install python-devel.x86_64
+	c-) install python package installer pip
 		$ sudo yum install python-pip
-	c-) install serpent (older version needed for python 2.7)
+	d-) install serpent (older version needed for python 2.7)
 		$ sudo pip install serpent==1.28
-	d-) Pyro4 install using pip
+	e-) Pyro4 install using pip
 		$ sudo pip install Pyro4
+	f-) install psutil using pip
+		$ sudo pip install psutil
 
 2-) install Pyro4 naming server:
 	a-) copy the naming server executable to init.d
