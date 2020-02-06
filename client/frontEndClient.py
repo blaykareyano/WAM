@@ -6,31 +6,55 @@ from __future__ import print_function
 # Standard Libraries
 import sys
 import os
+import platform
+import subprocess
+import threading
 import argparse
 import string
 import re, fnmatch
+import json
+from string import Template
 
 # 3rd Party Packages
 import Pyro4
 from tabulate import tabulate
 
+# Local Source Packages
+from utils.parseJSONFile import parseJSONFile
+
 # Pyro configuration options
 Pyro4.config.COMMTIMEOUT = 90.0
+
+# Development Version
 version = str(0.0)
 
 class frontEndClient(object):
 	def __init__(self, userArgs):
-		# parser arguments and definitions
+		# Define variables and load configuration file
+		self.opSystem = platform.system()
+		self.clientScriptDirectory = os.path.dirname(os.path.realpath(__file__)) # directory of this file
+		self.jsonFileName = None	# define default jsonFileName initialization
+		self.confFileLock = threading.Lock()
+		self.loadClientConfFile()
+		self.userName = self.clientConf["hostOptions"]["userName"]
+		self.pw = self.clientConf["hostOptions"]["password"]
+		self.clientDir = self.clientConf["hostOptions"]["clientRunDirectory"]
+
+		# Parser arguments and definitions
 		self.parser = argparse.ArgumentParser(prog="wam")
 
 		# Job submission arguments
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
-		self.parser.add_argument("-j","--job", help="Submit specified input file for analysis", type=str, nargs=1, action="store")
-		self.parser.add_argument("-cpus",help="Number of cores to be used in the analysis", type=int, nargs=1, default=1, action="store")
-		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs=1, default=None, action="store")
+		self.parser.add_argument("-j","--job", help="Submit specified input file for analysis", type=str, nargs='?', action="store")
+		self.parser.add_argument("-cpus",help="Number of cores to be used in the analysis", type=int, nargs='?', default=1, action="store")
+		self.parser.add_argument("-gpus",help="Number of gpus to be used in the analysis", type=int, nargs='?', default=0, action="store")
+		self.parser.add_argument("-n","--host",help="host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', action="store")
+		# self.parser.add_argument("-submodel",help="if this is a submodel, enter the global model name here without the extension", type=str, nargs=1, default=None, action="store")
+		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', default=None, action="store")
 		
 		# Info request arguments
-		self.parser.add_argument("-qa","--queryAll", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
+		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
+		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server", action="store_true")
 		self.parser.add_argument("-about", help="See WAM version, author, and license info", action="store_true")
 		
 		# if no inputs given display WAM help
@@ -43,10 +67,10 @@ class frontEndClient(object):
 
 		# Execute provided arguments
 		if userArgs.batch:
-			self.submitBatch(userArgs.cpus,userArgs.email)
+			self.submitBatch(userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
 			sys.exit(0)
 
-		if userArgs.qa:
+		if userArgs.computeStats:
 			self.queryAllServers()
 			sys.exit(0)
 
@@ -54,11 +78,34 @@ class frontEndClient(object):
 			self.printAbout()
 			sys.exit(0)
 
+	## loadClientConfFile Method
+	# pretty self explanatory I believe
+	def loadClientConfFile(self):
+		with self.confFileLock:
+			filePath = os.path.join(self.clientScriptDirectory,"clientConf.json")
+			self.clientConf = parseJSONFile(filePath)
+
 	## findFiles Method
 	# Returns all filenames from path (where) with given shell pattern (which)
 	def findFiles(self,which,where="."):
 		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
 		return [name for name in os.listdir(where) if rule.match(name)]
+
+	## scpJobFiles
+	# sends job files to the server daemon which will run job
+	# \todo linux scp command [Popen]
+	def scpJobFiles(self,files,host):
+		print("Transferring files to host: {0}".format(host))
+		destination = host + ":" + self.clientDir
+		if self.opSystem == "Windows":
+			for file in files:
+				p = subprocess.Popen(["pscp","-scp", "-l", self.userName, "-pw", self.pw, file, destination])
+				p.wait()
+		elif self.opSystem == "Linux":
+			pass
+		else:
+			print("*** ERROR: Incompatible operating system. Exiting.")
+			sys.exit(1)
 
 	## findSimulationFiles Method
 	# Searches current directory for all simulation job input files and takes user input on which to run
@@ -107,6 +154,7 @@ To quit the procedure enter: exit
 			# select all jobs in directory
 			if selectedJobIndicesStr == 'all':
 				selectedJobs = jobFiles
+				break
 
 			elif selectedJobIndicesStr == 'exit':
 				sys.exit(0)
@@ -127,13 +175,47 @@ To quit the procedure enter: exit
 					print("    Enter 'help' for information on how to select input files")
 					print("    Enter 'exit' to quit")
 					pass
-				
+		
+		print("\n")
 		return selectedJobs
 
 	## submitBatch Method
 	# takes input from parser and submits jobs on selected server
-	def submitBatch(self,cpus,email):
-		self.findSimulationFiles()
+	def submitBatch(self,host,cpus,gpus,email):
+		# get current working directory
+		currentDirectory = os.getcwd()
+
+		# Find all simulation files in current directory
+		inputFiles = self.findSimulationFiles()
+
+		# open template job info JSON file
+		with open(os.path.join(self.clientScriptDirectory,r"utils",r"abaqusSubmit.json.tmpl"), "r") as tmp:
+			jsonTemplate = tmp.read()
+
+		# create a dictionary with job submission information
+		jobInfo = {}
+		jobInfo["emailAddress"] = email
+		jobInfo["nCPUs"] = cpus
+		jobInfo["nGPUs"] = gpus
+		jobInfo["jobFiles"] = json.dumps(inputFiles)
+
+		# write dictionary to JSON template file
+		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
+
+		if self.jsonFileName is None:
+			self.jsonFileName = os.path.join(currentDirectory,"abaqusSubmit.json")
+
+		with open(self.jsonFileName, "w") as tmp:
+			tmp.write(jsonOutFile)
+
+		inputFiles.append(self.jsonFileName)
+
+		# check to make sure a host was specified
+		if host == None:
+			host = raw_input("Specify desired host (by name) to run job on (e.g. cougar, leopard, etc.):\n")
+			print("\n")
+
+		self.scpJobFiles(inputFiles, host)
 
 	## findServers Method
 	# Looks through the name server to find all registered servers
@@ -203,12 +285,6 @@ WAM - Workload Allocation Manager - Version {0}
 GitHub: https://github.com/blaykareyano/WAM
 Copyright (C) 2020 - Blake Arellano - blake.n.arellano@gmail.com
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Donate ---------------------------------------------------------
-	BTC: 3BC6gn8pHEPTJiiJ7AEaz5jnhVS1edneCH
-	ETH: 0xA2839e89672ceEe2a8d30FEfBcaF91b5d99c0Fd3
-	BAT: 0x48a5621aeF604AabACF268032f1116E425556DA5
-----------------------------------------------------------------
-
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
