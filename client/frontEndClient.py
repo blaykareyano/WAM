@@ -94,7 +94,7 @@ class frontEndClient(object):
 	## scpJobFiles
 	# sends job files to the server daemon which will run job
 	# \todo linux scp command [Popen]
-	def scpJobFiles(self,files,host):
+	def scpJobFiles(self,files,host, jobID):
 		print("Transferring files to host: {0}".format(host))
 		destination = host + ":" + self.clientDir
 		if self.opSystem == "Windows":
@@ -182,6 +182,8 @@ To quit the procedure enter: exit
 	## submitBatch Method
 	# takes input from parser and submits jobs on selected server
 	def submitBatch(self,host,cpus,gpus,email):
+		sys.excepthook = Pyro4.util.excepthook
+
 		# get current working directory
 		currentDirectory = os.getcwd()
 
@@ -215,7 +217,19 @@ To quit the procedure enter: exit
 			host = raw_input("Specify desired host (by name) to run job on (e.g. cougar, leopard, etc.):\n")
 			print("\n")
 
-		self.scpJobFiles(inputFiles, host)
+		# connect to defined host
+		ns = Pyro4.locateNS()
+		daemon_uri = ns.lookup("WAM." + host + ".daemon")
+		connectedServer = Pyro4.Proxy(daemon_uri)
+
+		# create job ID with server
+		try:
+			jobID = connectedServer.jobInitialization()
+			print("Job ID: {0}".format(jobID))
+		except Exception as e:
+			print("*** ERROR: unable to get initialize job: {0}".format(e))
+
+		self.scpJobFiles(inputFiles, host, jobID)
 
 	## findServers Method
 	# Looks through the name server to find all registered servers

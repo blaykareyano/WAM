@@ -4,8 +4,8 @@
     },
 
     "hostOptions": {    // assumes all hosts have the same username and password
-        "userName" : "analysis",    // host login username 
-        "password" : "pA55word$",   // host login password
+        "userName" : "b.arellano",    // host login username 
+        "password" : "Safety^6",   // host login password
         "clientRunDirectory" : "/home/analysis/Run/Blake/WAM"	// directory that jobs will run in
     }
 

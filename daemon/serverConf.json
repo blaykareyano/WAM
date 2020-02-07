@@ -4,7 +4,9 @@
     "usePortNumber" : 9998,                 // port number that the WAM daemon will listen to
 
     "localhost" : {
-        "logFileName"   : "server.log"      // log file name
+        "logFileName"   : "server.log",      // log file name
+        "maxLogSize"    : 5,                 // maximum log file size in Mb
+        "runDirectory"  : "C:\\Users\\b.arellano\\Documents\\GitHub\\WAM\\__Sandbox\\Run"
     }, 
 
     "nameServer" : {
@@ -12,6 +14,6 @@
         "nameServerIP" : "10.200.209.12",   // name server IP address
         "nameServerPort" : 9999,            // name server port # 
         "quitOnNameServerConnectionError" : false, // stop server in case of failure?
-        "reconnectToNameServer_minutes" : 1 // check connection to name server every N minutes
+        "reconnectToNameServer_minutes" : 5 // check connection to name server every N minutes
     } 
 }
