@@ -404,7 +404,6 @@ class JSSServer(object):
                 self.removeAbqLockFile(job)
 
                 # now run the job:
-
                 with open(stdOutFile,"a+") as out, open(stdErrorFile,"a+") as err:
                     os.chown(stdOutFile, currentUserID, -1)
                     os.chown(stdErrorFile, currentUserID, -1)   
