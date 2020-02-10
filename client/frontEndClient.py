@@ -6,6 +6,7 @@ from __future__ import print_function
 # Standard Libraries
 import sys
 import os
+import getpass
 import platform
 import subprocess
 import threading
@@ -38,13 +39,14 @@ class frontEndClient(object):
 		self.loadClientConfFile()
 		self.userName = self.clientConf["hostOptions"]["userName"]
 		self.pw = self.clientConf["hostOptions"]["password"]
-		self.clientDir = self.clientConf["hostOptions"]["clientRunDirectory"]
+		self.runDirectory = self.clientConf["hostOptions"]["daemonRunDirectory"]
 
 		# Parser arguments and definitions
 		self.parser = argparse.ArgumentParser(prog="wam")
 
 		# Job submission arguments
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
+		self.parser.add_argument("-a", "--all", help="submit all files in directory", action="store_true")
 		self.parser.add_argument("-j","--job", help="Submit specified input file for analysis", type=str, nargs='?', action="store")
 		self.parser.add_argument("-cpus",help="Number of cores to be used in the analysis", type=int, nargs='?', default=1, action="store")
 		self.parser.add_argument("-gpus",help="Number of gpus to be used in the analysis", type=int, nargs='?', default=0, action="store")
@@ -67,7 +69,7 @@ class frontEndClient(object):
 
 		# Execute provided arguments
 		if userArgs.batch:
-			self.submitBatch(userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			self.submitBatch(userArgs.all, userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
 			sys.exit(0)
 
 		if userArgs.computeStats:
@@ -91,27 +93,11 @@ class frontEndClient(object):
 		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
 		return [name for name in os.listdir(where) if rule.match(name)]
 
-	## scpJobFiles
-	# sends job files to the server daemon which will run job
-	# \todo linux scp command [Popen]
-	def scpJobFiles(self,files,host, jobID):
-		print("Transferring files to host: {0}".format(host))
-		destination = host + ":" + self.clientDir
-		if self.opSystem == "Windows":
-			for file in files:
-				p = subprocess.Popen(["pscp","-scp", "-l", self.userName, "-pw", self.pw, file, destination])
-				p.wait()
-		elif self.opSystem == "Linux":
-			pass
-		else:
-			print("*** ERROR: Incompatible operating system. Exiting.")
-			sys.exit(1)
-
 	## findSimulationFiles Method
 	# Searches current directory for all simulation job input files and takes user input on which to run
 	# Returns a list of job paths
 	# Only searching for Abaqus *.inp files (for now)
-	def findSimulationFiles(self):
+	def findSimulationFiles(self,selectAll):
 		# Define variables
 		currentDirectory = os.getcwd()
 		jobFiles = []
@@ -125,13 +111,17 @@ class frontEndClient(object):
 		for inputFile in inputFiles:
 			tmp = []
 			tmp.append(inputFile)
-			jobFiles.append(os.path.join(currentDirectory,inputFile))
+			jobFiles.append(os.path.join(inputFile))
 			jobTable.append(tmp[:])
 
 		# if no job files (*.inp) found then return an error
 		if not jobFiles:
 			print("*** ERROR: no Abaqus input files found")
 			sys.exit(1)
+
+		if selectAll:
+			selectedJobs = jobFiles
+			return selectedJobs
 
 		while True:
 			# present list of found jobs to the user and take input
@@ -179,16 +169,32 @@ To quit the procedure enter: exit
 		print("\n")
 		return selectedJobs
 
+	## scpJobFiles
+	# sends job files to the server daemon which will run job
+	# \todo linux scp command [Popen]
+	def scpJobFiles(self,files,host,jobID):
+		print("Transferring files to host: {0}".format(host))
+		destination = host + ":" + self.runDirectory + "/" + str(jobID)
+		if self.opSystem == "Windows":
+			for file in files:
+				p = subprocess.Popen(["pscp","-scp", "-l", self.userName, "-pw", self.pw, file, destination])
+				p.wait()
+		elif self.opSystem == "Linux":
+			pass
+		else:
+			print("*** ERROR: Incompatible operating system. Exiting.")
+			sys.exit(1)
+
 	## submitBatch Method
 	# takes input from parser and submits jobs on selected server
-	def submitBatch(self,host,cpus,gpus,email):
+	def submitBatch(self,selectAll,host,cpus,gpus,email):
 		sys.excepthook = Pyro4.util.excepthook
 
 		# get current working directory
 		currentDirectory = os.getcwd()
 
 		# Find all simulation files in current directory
-		inputFiles = self.findSimulationFiles()
+		inputFiles = self.findSimulationFiles(selectAll)
 
 		# open template job info JSON file
 		with open(os.path.join(self.clientScriptDirectory,r"utils",r"abaqusSubmit.json.tmpl"), "r") as tmp:
@@ -200,6 +206,7 @@ To quit the procedure enter: exit
 		jobInfo["nCPUs"] = cpus
 		jobInfo["nGPUs"] = gpus
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
+		jobInfo["clientUserName"] = getpass.getuser()
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -212,10 +219,20 @@ To quit the procedure enter: exit
 
 		inputFiles.append(self.jsonFileName)
 
+		# validate input file info
+		jobData = parseJSONFile(self.jsonFileName)
+		assert "InternalUse" in jobData.keys(), "JSON file ({0}) is missing the InternalUse block.".format(jsonFile)
+		assert jobData["InternalUse"]["jsonFileType"] == "abaqus", "Invalid job type: {0}".format(jobData["InternalUse"]["jsonFileType"])
+
 		# check to make sure a host was specified
 		if host == None:
-			host = raw_input("Specify desired host (by name) to run job on (e.g. cougar, leopard, etc.):\n")
-			print("\n")
+			while True:
+				host = raw_input("Specify desired host (by name) to run job on or enter list:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
 
 		# connect to defined host
 		ns = Pyro4.locateNS()
@@ -224,12 +241,19 @@ To quit the procedure enter: exit
 
 		# create job ID with server
 		try:
-			jobID = connectedServer.jobInitialization()
+			[jobID, jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
 			print("Job ID: {0}".format(jobID))
 		except Exception as e:
-			print("*** ERROR: unable to get initialize job: {0}".format(e))
+			print("*** ERROR: unable to initialize job: {0}".format(e))
 
+		# send job files to server
 		self.scpJobFiles(inputFiles, host, jobID)
+
+		# submit job files
+		try:
+			connectedServer.jobDefinition(jobDirectory)
+		except Exception as e:
+			print("*** ERROR: unable to submit job: {0}".format(e))
 
 	## findServers Method
 	# Looks through the name server to find all registered servers

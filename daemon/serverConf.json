@@ -6,7 +6,7 @@
     "localhost" : {
         "logFileName"   : "server.log",      // log file name
         "maxLogSize"    : 5,                 // maximum log file size in Mb
-        "runDirectory"  : "C:\\Users\\b.arellano\\Documents\\GitHub\\WAM\\__Sandbox\\Run"
+        "runDirectory"  : "/home/analysis/Run/Blake/WAM"
     }, 
 
     "nameServer" : {

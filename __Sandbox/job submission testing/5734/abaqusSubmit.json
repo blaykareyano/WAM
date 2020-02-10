@@ -2,7 +2,7 @@
 {
 
     // array containing the abaqus job names for the 
-    "jobFiles" : ["c1.inp", "c2.inp"],   
+    "jobFiles" : ["C:\\Users\\b.arellano\\Documents\\GitHub\\WAM\\client\\c1.inp", "C:\\Users\\b.arellano\\Documents\\GitHub\\WAM\\client\\c2.inp"],   
 
     "about" : "",       //optional, description about cases that we are running (recommended size: up to 30 characters)
 
@@ -15,7 +15,7 @@
          */
 
         // number of CPUs used to run the simulations
-        "cpus" : 1, 
+        "cpus" : 12, 
 
         // number of GPUs used to run the simulations
         "gpus" : 0,  
@@ -43,7 +43,8 @@
     "InternalUse" : { // internal use variables, keep as is...
         "jsonFileType": "abaqus",       // internal use - don't touch
         "jsonFileVersion" : "abq0.1",    // internal use - don't touch
-        "clientName" : "B.Arellano" // internal use - don't touch
-    }
+        "clientName" : "B.Arellano", // internal use - don't touch
+        "status" : "submitted" // internal use - don't touch
+   }
 
 }

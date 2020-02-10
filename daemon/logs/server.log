@@ -136,3 +136,83 @@
 02/07/2020 03:19:48 PM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/07/2020 03:24:48 PM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/07/2020 03:29:49 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 07:45:12 AM - INFO: WAM daemon server script initalized
+02/10/2020 07:45:12 AM - INFO: starting daemon on 10.200.209.117:9998
+02/10/2020 07:45:12 AM - INFO: daemon started successfully
+02/10/2020 07:45:12 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/10/2020 07:45:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 07:45:25 AM - INFO: job ID serpent file edited. Current ID = 8
+02/10/2020 07:45:25 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Run
+02/10/2020 07:45:25 AM - INFO: directory made for job: 8
+02/10/2020 07:46:42 AM - INFO: job ID serpent file edited. Current ID = 9
+02/10/2020 07:46:42 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Run
+02/10/2020 07:46:42 AM - INFO: directory made for job: 9
+02/10/2020 07:50:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 07:55:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:00:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:05:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:10:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:15:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:20:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:25:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:30:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:35:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:40:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:45:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:50:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 08:55:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:00:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:05:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:10:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:15:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:20:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:25:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:30:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:35:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:40:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:45:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:50:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 09:55:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:00:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:05:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:10:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:15:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:20:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:25:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:30:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:35:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:40:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:45:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:50:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 10:55:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:00:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:05:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:10:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:15:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:15:22 AM - INFO: WAM daemon server script initalized
+02/10/2020 11:15:22 AM - INFO: starting daemon on 10.200.209.117:9998
+02/10/2020 11:15:22 AM - INFO: daemon started successfully
+02/10/2020 11:15:22 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/10/2020 11:15:22 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:17:55 AM - INFO: WAM daemon server script initalized
+02/10/2020 11:17:55 AM - INFO: starting daemon on 10.200.209.117:9998
+02/10/2020 11:17:55 AM - INFO: daemon started successfully
+02/10/2020 11:17:55 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/10/2020 11:17:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:22:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:26:35 AM - INFO: job ID serpent file edited. Current ID = 10
+02/10/2020 11:26:35 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Run
+02/10/2020 11:26:35 AM - INFO: directory made for job: 10
+02/10/2020 11:27:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:28:00 AM - INFO: job ID serpent file edited. Current ID = 11
+02/10/2020 11:28:00 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Run
+02/10/2020 11:28:00 AM - INFO: directory made for job: 11
+02/10/2020 11:32:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:37:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:42:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:47:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:52:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 11:57:55 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 12:02:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 12:07:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/10/2020 12:12:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
