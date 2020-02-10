@@ -23,8 +23,9 @@ from tabulate import tabulate
 # Local Source Packages
 from utils.parseJSONFile import parseJSONFile
 
-# Pyro configuration options
+# Global Configuration Options
 Pyro4.config.COMMTIMEOUT = 90.0
+sys.tracebacklimit = 0
 
 # Development Version
 version = str(0.0)

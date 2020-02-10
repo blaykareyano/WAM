@@ -15,7 +15,7 @@
          */
 
         // number of CPUs used to run the simulations
-        "cpus" : 1, 
+        "cpus" : 4, 
 
         // number of GPUs used to run the simulations
         "gpus" : 0,  
