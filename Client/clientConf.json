@@ -3,10 +3,9 @@
         "abaqus"  : ["*.inp"]
     },
 
-    "hostOptions": {    // assumes all hosts have the same username and password
-        "userName" : "analysis",    // host login username 
-        "password" : "pA55word$",   // host login password
-        "daemonRunDirectory" : "/home/analysis/Run/Blake/WAM"	// directory that jobs will run in
+    "nameServer" : {
+    	"nsIP" : "10.200.209.12",
+    	"nsPort" : 9999
     }
 
 }

@@ -6,7 +6,9 @@
     "localhost" : {
         "logFileName"   : "server.log",      // log file name
         "maxLogSize"    : 5,                 // maximum log file size in Mb
-        "runDirectory"  : "/home/analysis/Run/Blake/WAM"
+        "runDirectory"  : "/home/analysis/Run/Blake/WAM",
+        "userName"      : "analysis",
+        "password"      : "pA55word$"
     }, 
 
     "nameServer" : {

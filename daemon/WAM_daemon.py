@@ -63,6 +63,7 @@ class serverDaemon(object):
 		self.nsThread = None
 
 		logging.info("WAM daemon server script initalized")
+	
 
 	def loadSerializedJobID(self):
 		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
@@ -116,6 +117,8 @@ class serverDaemon(object):
 			logging.root.removeHandler(handler)
 
 		logging.basicConfig(filename=logFile, level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+		logging.getLogger("Pyro4").setLevel(logging.DEBUG)
+		logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
 
 	## jobInitialization Method
 	# set up work directory for job
@@ -140,6 +143,7 @@ class serverDaemon(object):
 
 	## jobDefinition Method
 	# Gathers all necessary information for job submission
+	# Submits job to queue
 	def jobDefinition(self, jobDirectory):
 		jsonFile = os.path.join(jobDirectory,"abaqusSubmit.json")
 		jobData = parseJSONFile(jsonFile)
@@ -306,11 +310,19 @@ class serverDaemon(object):
 		return [self.hostName, self.cpus, totMem, self.IPaddr]
 
 	## loadServerConfFile Method
-	# pretty self explanatory I believe
+	# returns configuration json for client
 	def loadServerConfFile(self):
 		with self.confFileLock:
 			filePath = os.path.join(self.serverScriptDirectory,"serverConf.json")
 			self.serverConf = parseJSONFile(filePath)
+
+			return self.serverConf
+
+	## makePath Method
+	# allows the client to make a path in the daemons language
+	def makePath(self,path,folder):
+		reqPath = os.path.join(path,folder)
+		return reqPath
 
 def main():
 	server_daemon = serverDaemon()

@@ -216,3 +216,72 @@
 02/10/2020 12:02:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/10/2020 12:07:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/10/2020 12:12:55 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:13:35 AM - INFO: WAM daemon server script initalized
+02/11/2020 08:13:35 AM - INFO: starting daemon on 10.200.209.117:9998
+02/11/2020 08:13:35 AM - INFO: daemon started successfully
+02/11/2020 08:13:35 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/11/2020 08:13:35 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:18:35 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:23:35 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:24:31 AM - INFO: WAM daemon server script initalized
+02/11/2020 08:24:31 AM - INFO: starting daemon on 10.200.209.117:9998
+02/11/2020 08:24:31 AM - INFO: daemon started successfully
+02/11/2020 08:24:31 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/11/2020 08:24:32 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:26:06 AM - INFO: job ID serpent file edited. Current ID = 12
+02/11/2020 08:26:06 AM - INFO: job initialization started in directory: None
+02/11/2020 08:26:29 AM - INFO: job ID serpent file edited. Current ID = 13
+02/11/2020 08:26:29 AM - INFO: job initialization started in directory: /home/analysis/Run/Blake/WAM
+02/11/2020 08:26:29 AM - ERROR: unable to create job directory for job 13: [Error 3] The system cannot find the path specified: u'/home/analysis/Run/Blake/WAM\\13'
+02/11/2020 08:27:38 AM - INFO: job ID serpent file edited. Current ID = 14
+02/11/2020 08:27:38 AM - INFO: job initialization started in directory: /home/analysis/Run/Blake/WAM
+02/11/2020 08:27:38 AM - ERROR: unable to create job directory for job 14: [Error 3] The system cannot find the path specified: u'/home/analysis/Run/Blake/WAM\\14'
+02/11/2020 08:29:32 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:34:32 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:35:23 AM - INFO: WAM daemon server script initalized
+02/11/2020 08:35:23 AM - INFO: starting daemon on 10.200.209.117:9998
+02/11/2020 08:35:23 AM - INFO: daemon started successfully
+02/11/2020 08:35:23 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/11/2020 08:35:23 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:36:04 AM - INFO: job ID serpent file edited. Current ID = 15
+02/11/2020 08:36:04 AM - INFO: job initialization started in directory: /home/analysis/Run/Blake/WAM
+02/11/2020 08:36:04 AM - ERROR: unable to create job directory for job 15: [Error 3] The system cannot find the path specified: u'/home/analysis/Run/Blake/WAM\\15'
+02/11/2020 08:38:11 AM - INFO: WAM daemon server script initalized
+02/11/2020 08:38:11 AM - INFO: starting daemon on 10.200.209.117:9998
+02/11/2020 08:38:11 AM - INFO: daemon started successfully
+02/11/2020 08:38:11 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/11/2020 08:38:11 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:38:29 AM - INFO: job ID serpent file edited. Current ID = 16
+02/11/2020 08:38:29 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:38:29 AM - INFO: directory made for job: 16
+02/11/2020 08:41:07 AM - INFO: job ID serpent file edited. Current ID = 17
+02/11/2020 08:41:07 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:41:07 AM - INFO: directory made for job: 17
+02/11/2020 08:41:37 AM - INFO: job ID serpent file edited. Current ID = 18
+02/11/2020 08:41:37 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:41:37 AM - INFO: directory made for job: 18
+02/11/2020 08:42:21 AM - INFO: job ID serpent file edited. Current ID = 19
+02/11/2020 08:42:21 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:42:21 AM - INFO: directory made for job: 19
+02/11/2020 08:43:08 AM - INFO: job ID serpent file edited. Current ID = 20
+02/11/2020 08:43:08 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:43:08 AM - INFO: directory made for job: 20
+02/11/2020 08:43:12 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:48:19 AM - INFO: WAM daemon server script initalized
+02/11/2020 08:48:19 AM - INFO: starting daemon on 10.200.209.117:9998
+02/11/2020 08:48:19 AM - INFO: daemon started successfully
+02/11/2020 08:48:19 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.200.209.117:9998
+02/11/2020 08:48:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:50:13 AM - INFO: job ID serpent file edited. Current ID = 21
+02/11/2020 08:50:13 AM - INFO: job initialization started in directory: C:\Users\b.arellano\Documents\GitHub\WAM\__Sandbox\Full Test
+02/11/2020 08:50:13 AM - INFO: directory made for job: 21
+02/11/2020 08:53:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 08:58:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:03:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:08:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:13:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:18:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:23:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:28:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:33:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+02/11/2020 09:38:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
