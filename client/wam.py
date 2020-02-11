@@ -42,12 +42,11 @@ class frontEndClient(object):
 		self.jobDirectory = None	# folder that job in run in
 
 		# Parser arguments and definitions
-		self.parser = argparse.ArgumentParser(prog="wam")
+		self.parser = argparse.ArgumentParser(prog="wam") # \TODO add in description and epilog
 
 		# Job submission arguments
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
-		self.parser.add_argument("-a", "--all", help="submit all files in directory", action="store_true")
-		self.parser.add_argument("-j","--job", help="Submit specified input file for analysis", type=str, nargs='?', action="store")
+		self.parser.add_argument("-a", "--all", help="Submit all files in directory", action="store_true")
 		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', default=1, action="store")
 		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', default=0, action="store")
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', action="store")
@@ -55,6 +54,9 @@ class frontEndClient(object):
 
 		# Job retrieval arguments
 		self.parser.add_argument("-get", help="Retrieve job given job id (<job#> or <job#:filename>) once completed. Files are placed into current directory", type=str, nargs='?', action="store")
+
+		# Job monitor arguments
+		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id (<job#> or <job#:filename>). Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', action="store")
 		
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
@@ -74,8 +76,13 @@ class frontEndClient(object):
 			self.submitBatch(userArgs.all, userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
 			sys.exit(0)
 
+		if userArgs.monitor:
+			self.monitor(userArgs.monitor,userArgs.host)
+			sys.exit(0)
+
 		if userArgs.get:
 			self.getJob(userArgs.get,userArgs.host)
+			sys.exit(0)
 
 		if userArgs.computeStats:
 			self.queryAllServers()
@@ -266,10 +273,72 @@ To quit the procedure enter: exit
 		# submit job files
 		try:
 			connectedServer.jobDefinition(self.jobDirectory)
-			print("all jobs submitted to server for analysis")
+			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
 			print("*** ERROR: unable to submit job: {0}".format(e))
 			sys.exit(1)
+
+	def monitor(self,jobID,host):
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+		# load server config
+		self.loadServerConfFile(host)
+		self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
+
+		# normalize jobID input
+		jobIDsplit = string.split(jobID,":")
+		if len(jobIDsplit) > 1:
+			jobNumber = jobIDsplit[0]
+			jobName = string.split(jobIDsplit[1],".")[0] # incase .inp was added
+		else:
+			jobNumber = jobIDsplit[0]
+			jobName = None
+
+		# define job folder
+		connectedServer = self.connectToServer(host)
+		jobFolder = connectedServer.makePath(self.runDirectory,jobNumber)
+
+		# transfer files
+		print("Transferring files {0} from {1}:{2}".format(jobID,host,jobFolder))
+		userName = self.serverConfFile["localhost"]["userName"]
+		pw = self.serverConfFile["localhost"]["password"]
+		destination = os.getcwd()
+
+		if jobName == None:
+			files = ["*.msg","*.dat","*.sta","*.log"]
+			if self.opSystem == "Windows":
+				for file in files:
+					source = host + ":" + jobFolder + "/" + file
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p.wait()
+			elif self.opSystem == "Linux":
+				pass
+			else:
+				print("*** ERROR: Incompatible operating system. Exiting.")
+				sys.exit(1)
+		else:
+			files = [jobName+".msg",jobName+".dat",jobName+".sta","*.log"]
+			if self.opSystem == "Windows":
+				for file in files:
+					source = host + ":" + jobFolder + "/" + file
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p.wait()
+			elif self.opSystem == "Linux":
+				pass
+			else:
+				print("*** ERROR: Incompatible operating system. Exiting.")
+				sys.exit(1)
+		tmp = open(os.path.join(destination,"out.log"),"r")
+		tmp = tmp.read()
+		print("\n" + tmp)
+
 
 	## getJob Method
 	# retrieves job files for specified job ID
