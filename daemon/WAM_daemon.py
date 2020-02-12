@@ -63,7 +63,6 @@ class serverDaemon(object):
 		self.nsThread = None
 
 		logging.info("WAM daemon server script initalized")
-	
 
 	def loadSerializedJobID(self):
 		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
@@ -117,13 +116,13 @@ class serverDaemon(object):
 			logging.root.removeHandler(handler)
 
 		logging.basicConfig(filename=logFile, level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-		logging.getLogger("Pyro4").setLevel(logging.DEBUG)
-		logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
+		# logging.getLogger("Pyro4").setLevel(logging.DEBUG)
+		# logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
 
 	## jobInitialization Method
 	# set up work directory for job
 	# returns jobID and directory to client
-	def jobInitialization(self, runDirectory):
+	def jobInitialization(self,runDirectory):
 		# create new jobID and serialize
 		self.jobID = self.jobID + 1
 		self.serializeJobID()
@@ -144,7 +143,7 @@ class serverDaemon(object):
 	## jobDefinition Method
 	# Gathers all necessary information for job submission
 	# Submits job to queue
-	def jobDefinition(self, jobDirectory):
+	def jobDefinition(self,jobDirectory):
 		jsonFile = os.path.join(jobDirectory,"abaqusSubmit.json")
 		jobData = parseJSONFile(jsonFile)
 
@@ -161,16 +160,17 @@ class serverDaemon(object):
 			singleJob["InternalUse"]["singleJobID"] = str(self.jobID)+":"+singleJob["jobName"]
 			singleJob["InternalUse"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobName"]+".inp")
 
-			logging.info("created job {0} from submission {1}".format(singleJob["InternalUse"]["singleJobID"],self.jobID))
+			logging.info("created job {0}".format(singleJob["InternalUse"]["singleJobID"]))
 
 			self.addJobToQueue(singleJob, jobDirectory)	
 
 	## addJobToQueue Method
 	# adds jobs from job list into queue
 	# calls _runJob from created queue
-	def addJobToQueue(self, job, jobDirectory):
+	def addJobToQueue(self,job,jobDirectory):
 		with self.jobListLock:
 
+			job["InternalUse"]["status"] = "queue"
 			logging.info("Job {0} added to queue".format(job["InternalUse"]["singleJobID"]))
 
 			self.jobs.append(job)
@@ -182,8 +182,14 @@ class serverDaemon(object):
 	# submits each job individually
 	def __runJob(self, job, jobDirectory):
 		with self.CPULock:
+			# check if job has been killed
+			if "killed" in job["InternalUse"]["status"]:
+				return
+
 			# preliminary job submission stuff	
-			self.start = datetime.datetime.now() # start a clock 
+			self.start = datetime.datetime.now() # start a clock
+			with self.jobListLock:
+				job["InternalUse"]["status"] = "running"
 			os.chdir(jobDirectory)
 			cwd = jobDirectory
 
@@ -237,6 +243,7 @@ class serverDaemon(object):
 					os.chown(stdOutFile, currentUserID, -1)
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
+						logging.info("Job {0} has been submitted for analysis".format(singleJobID))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
@@ -249,7 +256,7 @@ class serverDaemon(object):
 						err.write("\n")
 
 						logging.error("Error running Abaqus: {0}".format(singleJobID))
-						logging.error("Error encountered while executing: {0} \n".format(cmd))
+						logging.error("Error encountered while executing: {0}".format(cmd))
 
 			elif self.opSystem == "Windows":
 				with open(stdOutFile,"a+") as out, open(stdErrorFile,"a+") as err:
@@ -268,6 +275,22 @@ class serverDaemon(object):
 
 						logging.error("Error running Abaqus: {0}".format(singleJobID))
 						logging.error("Error encountered while executing: {0} \n".format(cmd))
+
+			# post job cleanup
+			self.currentSubProcess = None
+
+			with self.jobListLock:
+				job["InternalUse"]["status"] = "complete"
+
+				# remove job from jobs list
+				if job in self.jobs:
+					indexToRemove = self.jobs.index(job)
+					removedItem = self.jobs.pop(indexToRemove)
+					self.serializeJobList()
+
+	# def killJob(self,job,jobDirectory):
+	# 	with self.jobListLock:
+	# 		for job in self.jobs
 
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON
