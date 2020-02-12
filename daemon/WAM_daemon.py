@@ -12,11 +12,13 @@ import getpass
 import subprocess
 import threading
 import socket
+import signal
 import time
 import datetime
 import multiprocessing
 import logging
 import copy
+import string
 from subprocess import CalledProcessError, check_output
 
 # 3rd Party Packages
@@ -157,10 +159,11 @@ class serverDaemon(object):
 			singleJob = copy.deepcopy(jobData)
 			singleJob.pop("jobFiles",None)
 			singleJob["jobName"] = os.path.splitext(os.path.basename(jobFile))[0]
-			singleJob["InternalUse"]["singleJobID"] = str(self.jobID)+":"+singleJob["jobName"]
+			singleJob["InternalUse"]["jobNumber"] = str(self.jobID)
+			singleJob["InternalUse"]["jobID"] = str(self.jobID)+":"+singleJob["jobName"]
 			singleJob["InternalUse"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobName"]+".inp")
 
-			logging.info("created job {0}".format(singleJob["InternalUse"]["singleJobID"]))
+			logging.info("created job {0}".format(singleJob["InternalUse"]["jobID"]))
 
 			self.addJobToQueue(singleJob, jobDirectory)	
 
@@ -171,7 +174,7 @@ class serverDaemon(object):
 		with self.jobListLock:
 
 			job["InternalUse"]["status"] = "queue"
-			logging.info("Job {0} added to queue".format(job["InternalUse"]["singleJobID"]))
+			logging.info("Job {0} added to queue".format(job["InternalUse"]["jobID"]))
 
 			self.jobs.append(job)
 			self.serializeJobList()
@@ -190,6 +193,7 @@ class serverDaemon(object):
 			self.start = datetime.datetime.now() # start a clock
 			with self.jobListLock:
 				job["InternalUse"]["status"] = "running"
+				self.serializeJobList()
 			os.chdir(jobDirectory)
 			cwd = jobDirectory
 
@@ -202,8 +206,11 @@ class serverDaemon(object):
 			cpus = job["solverFlags"]["cpus"]
 			gpus = job["solverFlags"]["gpus"]
 			jobName = job["jobName"]
-			singleJobID = job["InternalUse"]["singleJobID"]
+			JobID = job["InternalUse"]["jobID"]
 			solver = job["InternalUse"]["jsonFileType"]
+
+			self.currentJobID = JobID
+			self.currentJobNumber = job["InternalUse"]["jobNumber"]
 
 			# compile command line options
 			cmd = []
@@ -243,11 +250,11 @@ class serverDaemon(object):
 					os.chown(stdOutFile, currentUserID, -1)
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
-						logging.info("Job {0} has been submitted for analysis".format(singleJobID))
+						logging.info("Job {0} has been submitted for analysis".format(JobID))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
-						logging.info("Job {0} has completed".format(singleJobID))
+						logging.info("Job {0} has completed".format(JobID))
 					except Exception as e:
 						cmd = " ".join(cmd)
 						err.write("*** ERROR: command line error\n")
@@ -255,7 +262,7 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("Error running Abaqus: {0}".format(singleJobID))
+						logging.error("Error running Abaqus: {0}".format(JobID))
 						logging.error("Error encountered while executing: {0}".format(cmd))
 
 			elif self.opSystem == "Windows":
@@ -264,7 +271,7 @@ class serverDaemon(object):
 						cmd[0] = "C:\\SIMULIA\\Commands\\abaqus.bat"
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, cwd=cwd)
 						self.currentSubProcess.wait()
-						logging.info("Job {0} has completed".format(singleJobID))					
+						logging.info("Job {0} has completed".format(JobID))					
 						self.currentSubProcess = None
 					except:
 						cmd = " ".join(cmd)
@@ -273,10 +280,12 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("Error running Abaqus: {0}".format(singleJobID))
+						logging.error("Error running Abaqus: {0}".format(JobID))
 						logging.error("Error encountered while executing: {0} \n".format(cmd))
 
 			# post job cleanup
+			self.currentJobID = None
+			self.currentJobNumber = None
 			self.currentSubProcess = None
 
 			with self.jobListLock:
@@ -288,9 +297,53 @@ class serverDaemon(object):
 					removedItem = self.jobs.pop(indexToRemove)
 					self.serializeJobList()
 
-	# def killJob(self,job,jobDirectory):
-	# 	with self.jobListLock:
-	# 		for job in self.jobs
+	## killJob Method
+	# looks through all jobs in queue and kills requested jobs
+	def killJob(self,jobID,username):
+		# normalize jobID input
+		jobIDsplit = string.split(jobID,":")
+		if len(jobIDsplit) > 1:
+			jobNumber = jobIDsplit[0]
+			jobName = string.split(jobIDsplit[1],".")[0] # incase .inp was added
+			jobID = jobNumber + ":" + jobName
+		else:
+			jobNumber = jobIDsplit[0]
+			jobName = None
+			jobID = jobNumber
+
+		msgs = []
+
+		with self.jobListLock:
+			for job in self.jobs[::-1]:
+				if jobName == None:
+					jobRef = job["InternalUse"]["jobNumber"]
+					curJobRef = self.currentJobNumber
+				else:
+					jobRef = job["InternalUse"]["jobID"]
+					curJobRef = self.currentJobID
+
+				if jobRef == jobID:
+					job["InternalUse"]["status"] = "killed by %s"%(username)
+					indexToRemove = self.jobs.index(job)
+					removedItem = self.jobs.pop(indexToRemove)
+					self.serializeJobList()
+
+					# if the job is currently running... SACRIFICE
+					if jobID == curJobRef:
+						if self.currentSubProcess is not None:
+							os.killpg(self.currentSubProcess.pid, signal.SIGTERM)
+
+					msg = "Job {0} killed by {1}".format(job["InternalUse"]["jobID"],username)
+					logging.info("job {0} killed by {1}".format(job["InternalUse"]["jobID"],username))
+
+					msgs.append(msg)
+
+		if len(msgs) == 0:
+			msg = "*** ERROR: invalid job number: {0}".format(jobID)
+			msgs.append(msg)
+			logging.error("attempted to kill job, invalid job number: {0}".format(jobID))
+		
+		return msgs
 
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON

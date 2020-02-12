@@ -34,6 +34,7 @@ class frontEndClient(object):
 	def __init__(self, userArgs):
 		# Define variables and load configuration file
 		self.opSystem = platform.system()
+		self.userName = getpass.getuser()
 		self.clientScriptDirectory = os.path.dirname(os.path.realpath(__file__)) # directory of this file
 		self.jsonFileName = None	# define default jsonFileName initialization
 		self.confFileLock = threading.Lock()
@@ -52,11 +53,10 @@ class frontEndClient(object):
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', action="store")
 		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', default=None, action="store")
 
-		# Job retrieval arguments
+		# Other job controls
 		self.parser.add_argument("-get", help="Retrieve job given job id (<job#> or <job#:filename>) once completed. Files are placed into current directory", type=str, nargs='?', action="store")
-
-		# Job monitor arguments
 		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id (<job#> or <job#:filename>). Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', action="store")
+		self.parser.add_argument("-k", "--kill", help="Kill job by job id (<job#> or <job#:filename>). Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job.", type=str, nargs='?', action="store")
 		
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
@@ -73,15 +73,19 @@ class frontEndClient(object):
 
 		# Execute provided arguments
 		if userArgs.batch:
-			self.submitBatch(userArgs.all, userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			self.submitBatch(userArgs.all,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			sys.exit(0)
+
+		if userArgs.get:
+			self.getJob(userArgs.get,userArgs.host)
 			sys.exit(0)
 
 		if userArgs.monitor:
 			self.monitor(userArgs.monitor,userArgs.host)
 			sys.exit(0)
 
-		if userArgs.get:
-			self.getJob(userArgs.get,userArgs.host)
+		if userArgs.kill:
+			self.killJob(userArgs.kill,userArgs.host)
 			sys.exit(0)
 
 		if userArgs.computeStats:
@@ -224,7 +228,7 @@ To quit the procedure enter: exit
 		jobInfo["nCPUs"] = cpus
 		jobInfo["nGPUs"] = gpus
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
-		jobInfo["clientUserName"] = getpass.getuser()
+		jobInfo["clientUserName"] = self.userName
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -277,68 +281,6 @@ To quit the procedure enter: exit
 		except Exception as e:
 			print("*** ERROR: unable to submit job: {0}".format(e))
 			sys.exit(1)
-
-	def monitor(self,jobID,host):
-		# check to make sure a host was specified
-		if host == None:
-			while True:
-				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
-				print("\n")
-				if host == "list":
-					self.queryAllServers()
-				elif host:
-					break
-		# load server config
-		self.loadServerConfFile(host)
-		self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
-
-		# normalize jobID input
-		jobIDsplit = string.split(jobID,":")
-		if len(jobIDsplit) > 1:
-			jobNumber = jobIDsplit[0]
-			jobName = string.split(jobIDsplit[1],".")[0] # incase .inp was added
-		else:
-			jobNumber = jobIDsplit[0]
-			jobName = None
-
-		# define job folder
-		connectedServer = self.connectToServer(host)
-		jobFolder = connectedServer.makePath(self.runDirectory,jobNumber)
-
-		# transfer files
-		print("Transferring files {0} from {1}:{2}".format(jobID,host,jobFolder))
-		userName = self.serverConfFile["localhost"]["userName"]
-		pw = self.serverConfFile["localhost"]["password"]
-		destination = os.getcwd()
-
-		if jobName == None:
-			files = ["*.msg","*.dat","*.sta","*.log"]
-			if self.opSystem == "Windows":
-				for file in files:
-					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
-					p.wait()
-			elif self.opSystem == "Linux":
-				pass
-			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
-				sys.exit(1)
-		else:
-			files = [jobName+".msg",jobName+".dat",jobName+".sta","*.log"]
-			if self.opSystem == "Windows":
-				for file in files:
-					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
-					p.wait()
-			elif self.opSystem == "Linux":
-				pass
-			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
-				sys.exit(1)
-		tmp = open(os.path.join(destination,"out.log"),"r")
-		tmp = tmp.read()
-		print("\n" + tmp)
-
 
 	## getJob Method
 	# retrieves job files for specified job ID
@@ -400,6 +342,89 @@ To quit the procedure enter: exit
 			else:
 				print("*** ERROR: Incompatible operating system. Exiting.")
 				sys.exit(1)
+
+	## monitor Method
+	# retrieves status files for job, displays out.log to user
+	def monitor(self,jobID,host):
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+		
+		# load server config
+		self.loadServerConfFile(host)
+		self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
+
+		# normalize jobID input
+		jobIDsplit = string.split(jobID,":")
+		if len(jobIDsplit) > 1:
+			jobNumber = jobIDsplit[0]
+			jobName = string.split(jobIDsplit[1],".")[0] # incase .inp was added
+		else:
+			jobNumber = jobIDsplit[0]
+			jobName = None
+
+		# define job folder
+		connectedServer = self.connectToServer(host)
+		jobFolder = connectedServer.makePath(self.runDirectory,jobNumber)
+
+		# transfer files
+		print("Transferring files {0} from {1}:{2}".format(jobID,host,jobFolder))
+		userName = self.serverConfFile["localhost"]["userName"]
+		pw = self.serverConfFile["localhost"]["password"]
+		destination = os.getcwd()
+
+		if jobName == None:
+			files = ["*.msg","*.dat","*.sta","*.log"]
+			if self.opSystem == "Windows":
+				for file in files:
+					source = host + ":" + jobFolder + "/" + file
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p.wait()
+			elif self.opSystem == "Linux":
+				pass
+			else:
+				print("*** ERROR: Incompatible operating system. Exiting.")
+				sys.exit(1)
+		else:
+			files = [jobName+".msg",jobName+".dat",jobName+".sta","*.log"]
+			if self.opSystem == "Windows":
+				for file in files:
+					source = host + ":" + jobFolder + "/" + file
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p.wait()
+			elif self.opSystem == "Linux":
+				pass
+			else:
+				print("*** ERROR: Incompatible operating system. Exiting.")
+				sys.exit(1)
+		tmp = open(os.path.join(destination,"out.log"),"r")
+		tmp = tmp.read()
+		print("\n" + tmp)
+
+	def killJob(self,jobID,host):
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+
+		connectedServer = self.connectToServer(host)
+
+		msgs = connectedServer.killJob(jobID,self.userName)
+		print(msgs)
+		
+		for msg in msgs:
+			print(msg)
 
 	# connectToServer Method
 	# used Pyro to connect to defined server

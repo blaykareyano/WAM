@@ -721,8 +721,6 @@ class JSSServer(object):
         ns["NS_PORT"]  = self.serverConf["nameServer"]["nameServerPort"]
         return ns
 
-
-
 def main():
     jssServer = JSSServer()
     try:  # if we are connected to the network, use netork ip
