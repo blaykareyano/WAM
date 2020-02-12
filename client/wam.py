@@ -48,15 +48,15 @@ class frontEndClient(object):
 		# Job submission arguments
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
 		self.parser.add_argument("-a", "--all", help="Submit all files in directory", action="store_true")
-		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', default=1, action="store")
-		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', default=0, action="store")
-		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', action="store")
-		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', default=None, action="store")
+		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", default=1, action="store")
+		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", default=0, action="store")
+		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
+		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', metavar="soandso@email.com", default=None, action="store")
 
 		# Other job controls
-		self.parser.add_argument("-get", help="Retrieve job given job id (<job#> or <job#:filename>) once completed. Files are placed into current directory", type=str, nargs='?', action="store")
-		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id (<job#> or <job#:filename>). Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', action="store")
-		self.parser.add_argument("-k", "--kill", help="Kill job by job id (<job#> or <job#:filename>). Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job.", type=str, nargs='?', action="store")
+		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id. Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job.", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
 		
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
@@ -249,7 +249,7 @@ To quit the procedure enter: exit
 		# check to make sure a host was specified
 		if host == None:
 			while True:
-				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
 				print("\n")
 				if host == "list":
 					self.queryAllServers()
@@ -349,7 +349,7 @@ To quit the procedure enter: exit
 		# check to make sure a host was specified
 		if host == None:
 			while True:
-				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
 				print("\n")
 				if host == "list":
 					self.queryAllServers()
@@ -407,11 +407,13 @@ To quit the procedure enter: exit
 		tmp = tmp.read()
 		print("\n" + tmp)
 
+	## killJob method
+	# kills job given a jobID
 	def killJob(self,jobID,host):
 		# check to make sure a host was specified
 		if host == None:
 			while True:
-				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
 				print("\n")
 				if host == "list":
 					self.queryAllServers()
@@ -421,7 +423,6 @@ To quit the procedure enter: exit
 		connectedServer = self.connectToServer(host)
 
 		msgs = connectedServer.killJob(jobID,self.userName)
-		print(msgs)
 		
 		for msg in msgs:
 			print(msg)
