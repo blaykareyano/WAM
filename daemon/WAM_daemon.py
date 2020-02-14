@@ -66,61 +66,6 @@ class serverDaemon(object):
 
 		logging.info("WAM daemon server script initalized")
 
-	def loadSerializedJobID(self):
-		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
-		if os.path.isfile(jobIDPath):
-			self.jobID = serpent.load(open(jobIDPath, "rb"))
-			logging.info("job ID serpent file opened. Current ID = {0}".format(self.jobID))
-		else:
-			self.jobID = 0
-			serpent.dump(self.jobID, open(jobIDPath, "wb"))
-			logging.info("created job ID serpent file: {0}".format(self.jobID))
-
-	def serializeJobID(self):
-		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
-		with self.jobIDLock:        
-			try:
-				serpent.dump(self.jobID, open(jobIDPath,"wb"))
-				logging.info("job ID serpent file edited. Current ID = {0}".format(self.jobID))
-			except:
-				logging.error("unable to serialize job ID counter")
-
-	def loadSerializedJobList(self):
-		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
-		with self.serializeJobListLock:
-			if os.path.isfile(jobListPath):
-				self.jobs = serpent.load(open(jobListPath,"rb"))
-			else:
-				self.jobs = []
-
-	def serializeJobList(self):
-		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
-		with self.serializeJobListLock:
-			try:
-				serpent.dump(self.jobs, open(jobListPath,"wb"))
-			except:
-				logging.error("unable to serializeJobList")
-
-	## loggingSetup Method
-	# configure and start logging
-	def loggingSetup(self):
-		logFile = os.path.join(self.serverScriptDirectory,"logs",self.serverConf["localhost"]["logFileName"])
-		maxLogSize = self.serverConf["localhost"]["maxLogSize"] # maximum size of log file in Mb
-
-		if not os.path.isfile(logFile): # check if log file exists and create one if not
-			open(logFile, 'a').close()
-
-		logFileSize = os.path.getsize(logFile) # delete log file is larger than max - only occurs during restart
-		if logFileSize > maxLogSize*1048576:
-			os.remove(logFile)
-
-		for handler in logging.root.handlers[:]: # reset logging handlers incase some dumb dumb came along and messed it all up
-			logging.root.removeHandler(handler)
-
-		logging.basicConfig(filename=logFile, level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-		# logging.getLogger("Pyro4").setLevel(logging.DEBUG)
-		# logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
-
 	## jobInitialization Method
 	# set up work directory for job
 	# returns jobID and directory to client
@@ -345,6 +290,102 @@ class serverDaemon(object):
 		
 		return msgs
 
+	## getComputerInfo Method
+	# gathers host info to be presented to client
+	def getComputerInfo(self):
+		logging.info("HPC information requested from client")
+		
+		# Get total memory and convert from bytes to Gb
+		totMem = int(self.mem.total/1000000000) # convert from bytes to gb
+
+		jobsQueue = 0
+		jobsRunning = 0
+		jobList = []
+		for job in self.jobs:
+			tmp = []
+			tmp.append(job["InternalUse"]["clientName"])
+			tmp.append(job["InternalUse"]["jobID"])
+			if "running" in job["InternalUse"]["status"]:
+				now = datetime.datetime.now()
+				deltaTime = now - self.start
+				hours, remainder = divmod(deltaTime.seconds, 3600)
+				minutes, seconds = divmod(remainder, 60)
+				deltaTime = ("dt: {0}:{1}:{2}".format(hours,minutes,seconds))
+				tmp.append("{0} {1}".format(job["InternalUse"]["status"],deltaTime))
+				jobsRunning = jobsRunning + 1
+			else:
+				tmp.append(job["InternalUse"]["status"])
+				jobsQueue = jobsQueue + 1
+
+			jobList.append(tmp[:])
+
+		# return needed values
+		return [self.hostName, self.cpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning]
+
+	def loadSerializedJobID(self):
+		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
+		if os.path.isfile(jobIDPath):
+			self.jobID = serpent.load(open(jobIDPath, "rb"))
+			logging.info("job ID serpent file opened. Current ID = {0}".format(self.jobID))
+		else:
+			self.jobID = 0
+			serpent.dump(self.jobID, open(jobIDPath, "wb"))
+			logging.info("created job ID serpent file: {0}".format(self.jobID))
+
+	def serializeJobID(self):
+		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
+		with self.jobIDLock:        
+			try:
+				serpent.dump(self.jobID, open(jobIDPath,"wb"))
+				logging.info("job ID serpent file edited. Current ID = {0}".format(self.jobID))
+			except:
+				logging.error("unable to serialize job ID counter")
+
+	def loadSerializedJobList(self):
+		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
+		with self.serializeJobListLock:
+			if os.path.isfile(jobListPath):
+				self.jobs = serpent.load(open(jobListPath,"rb"))
+			else:
+				self.jobs = []
+
+	def serializeJobList(self):
+		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
+		with self.serializeJobListLock:
+			try:
+				serpent.dump(self.jobs, open(jobListPath,"wb"))
+			except:
+				logging.error("unable to serializeJobList")
+
+	## loadServerConfFile Method
+	# returns configuration json for client
+	def loadServerConfFile(self):
+		with self.confFileLock:
+			filePath = os.path.join(self.serverScriptDirectory,"serverConf.json")
+			self.serverConf = parseJSONFile(filePath)
+
+			return self.serverConf
+
+	## loggingSetup Method
+	# configure and start logging
+	def loggingSetup(self):
+		logFile = os.path.join(self.serverScriptDirectory,"logs",self.serverConf["localhost"]["logFileName"])
+		maxLogSize = self.serverConf["localhost"]["maxLogSize"] # maximum size of log file in Mb
+
+		if not os.path.isfile(logFile): # check if log file exists and create one if not
+			open(logFile, 'a').close()
+
+		logFileSize = os.path.getsize(logFile) # delete log file is larger than max - only occurs during restart
+		if logFileSize > maxLogSize*1048576:
+			os.remove(logFile)
+
+		for handler in logging.root.handlers[:]: # reset logging handlers incase some dumb dumb came along and messed it all up
+			logging.root.removeHandler(handler)
+
+		logging.basicConfig(filename=logFile, level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+		# logging.getLogger("Pyro4").setLevel(logging.DEBUG)
+		# logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
+
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON
 	# starts a thread which continuously checks the connection to the name server
@@ -374,28 +415,8 @@ class serverDaemon(object):
 			self.nsThread.setDaemon(False)
 			self.nsThread.start()
 
-	## getComputerInfo Method
-	# gathers host info to be presented to client
-	def getComputerInfo(self):
-		logging.info("HPC info requested from client")
-		
-		# Get total memory and convert from bytes to Gb
-		totMem = int(self.mem.total/1000000000) # convert from bytes to gb
-
-		# return needed values
-		return [self.hostName, self.cpus, totMem, self.IPaddr]
-
-	## loadServerConfFile Method
-	# returns configuration json for client
-	def loadServerConfFile(self):
-		with self.confFileLock:
-			filePath = os.path.join(self.serverScriptDirectory,"serverConf.json")
-			self.serverConf = parseJSONFile(filePath)
-
-			return self.serverConf
-
 	## makePath Method
-	# allows the client to make a path in the daemons language
+	# allows the client to make a path in the daemons syntax
 	def makePath(self,path,folder):
 		reqPath = os.path.join(path,folder)
 		return reqPath

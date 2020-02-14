@@ -92,28 +92,13 @@ class frontEndClient(object):
 			self.queryAllServers()
 			sys.exit(0)
 
+		if userArgs.queueStats:
+			self.queryAllQueues()
+			sys.exit(0)
+
 		if userArgs.about:
 			self.printAbout()
 			sys.exit(0)
-
-	def loadClientConfFile(self):
-		with self.confFileLock:
-			filePath = os.path.join(self.clientScriptDirectory,"clientConf.json")
-			self.clientConf = parseJSONFile(filePath)
-
-	def loadServerConfFile(self,host):
-		try:
-			connectedServer = self.connectToServer(host)
-			self.serverConfFile = connectedServer.loadServerConfFile()
-		except Exception as e:
-			print("*** ERROR: unable to get server configuration file: {0}".format(e))
-			sys.exit(1)	
-
-	## findFiles Method
-	# Returns all filenames from path (where) with given shell pattern (which)
-	def findFiles(self,which,where="."):
-		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
-		return [name for name in os.listdir(where) if rule.match(name)]
 
 	## findSimulationFiles Method
 	# Searches current directory for all simulation job input files and takes user input on which to run
@@ -288,7 +273,7 @@ To quit the procedure enter: exit
 		# check to make sure a host was specified
 		if host == None:
 			while True:
-				host = raw_input("Specify desired host (by name) to run job on or enter 'list' to view all active servers:\n")
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
 				print("\n")
 				if host == "list":
 					self.queryAllServers()
@@ -319,7 +304,7 @@ To quit the procedure enter: exit
 		destination = os.getcwd()
 
 		if jobName == None:
-			files = ["*.msg","*.dat","*.odb"]
+			files = ["*.msg","*.dat","*.odb","*.sim","*.prt"]
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -331,7 +316,7 @@ To quit the procedure enter: exit
 				print("*** ERROR: Incompatible operating system. Exiting.")
 				sys.exit(1)
 		else:
-			files = [jobName+".msg",jobName+".dat",jobName+".odb"]
+			files = [jobName+".msg",jobName+".dat",jobName+".odb",jobName+".sim",jobName+".prt"]
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -427,37 +412,6 @@ To quit the procedure enter: exit
 		for msg in msgs:
 			print(msg)
 
-	# connectToServer Method
-	# used Pyro to connect to defined server
-	# returns Pyro proxy object
-	def connectToServer(self,host):
-		sys.excepthook = Pyro4.util.excepthook
-		nsIP = self.clientConf["nameServer"]["nsIP"]
-		nsPort = self.clientConf["nameServer"]["nsPort"]
-		ns = Pyro4.locateNS(host=nsIP,port=nsPort)
-		daemon_uri = ns.lookup("WAM." + host + ".daemon")
-		connectedServer = Pyro4.Proxy(daemon_uri)
-		return connectedServer
-
-	## findServers Method
-	# Looks through the name server to find all registered servers
-	def findServers(self):
-		sys.excepthook = Pyro4.util.excepthook
-		ns = Pyro4.locateNS()
-
-		daemon_uris = []
-		daemonNames = []
-
-		for daemonName, daemon_uri in ns.list(prefix="WAM.").items():
-			daemon_uris.append(daemon_uri)
-			daemonNames.append(daemonName)
-
-		if not daemon_uris:
-			print("*** ERROR: No server daemons found!")
-		
-		daemons = zip(daemon_uris,daemonNames)
-		return daemons
-
 	## queryAllServers Method
 	# Looks through all servers and gathers machine info (cores, avail. memory, IP addr)
 	def queryAllServers(self):
@@ -473,14 +427,14 @@ To quit the procedure enter: exit
 			currentServer = Pyro4.Proxy(daemon_uri)
 
 			try:
-				[compName, cpus, mem, IP] = currentServer.getComputerInfo()
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
 				
 				tmp = []
 				tmp.append(compName)
 				tmp.append(IP)
 				tmp.append(cpus)
 				tmp.append(str(mem) + " Gb")
-				tmp.append("TODO")
+				tmp.append("Running: {0}, Queue: {1}".format(jobsRunning,jobsQueue))
 
 				table.append(tmp[:])
 
@@ -488,6 +442,43 @@ To quit the procedure enter: exit
 				tmp = []
 				tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
 				tmp.append("ERROR")
+				tmp.append("ERROR")
+				tmp.append("ERROR")
+				tmp.append("ERROR")
+
+				table.append(tmp[:])
+				print("*** ERROR: {0}".format(e))
+				pass
+
+		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
+
+	def queryAllQueues(self):
+		sys.excepthook = Pyro4.util.excepthook
+
+		# Initialize the table
+		headers = ["Host Name", "Username", "Job ID", "Status"]
+		table = []
+
+		# Find all daemon servers and loop through them
+		daemons = self.findServers()
+		for daemon_uri, daemonName in daemons:
+			currentServer = Pyro4.Proxy(daemon_uri)
+
+			try:
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
+
+				for job in jobList:
+					tmp = []
+					tmp.append(compName) # hostname
+					tmp.append(job[0]) # username
+					tmp.append(job[1]) # job ID
+					tmp.append(job[2]) # status
+
+					table.append(tmp[:])
+
+			except Exception as e:
+				tmp = []
+				tmp.append(compName)
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
@@ -523,6 +514,60 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 MA  02110-1301, USA.
 =================================================================
         """.format(version))
+
+	# connectToServer Method
+	# used Pyro to connect to defined server
+	# returns Pyro proxy object
+	def connectToServer(self,host):
+		sys.excepthook = Pyro4.util.excepthook
+		nsIP = self.clientConf["nameServer"]["nsIP"]
+		nsPort = self.clientConf["nameServer"]["nsPort"]
+		ns = Pyro4.locateNS(host=nsIP,port=nsPort)
+		daemon_uri = ns.lookup("WAM." + host + ".daemon")
+		connectedServer = Pyro4.Proxy(daemon_uri)
+		return connectedServer
+
+	## findServers Method
+	# Looks through the name server to find all registered servers
+	def findServers(self):
+		sys.excepthook = Pyro4.util.excepthook
+
+		nsHost = self.clientConf["nameServer"]["nsIP"]
+		nsPort = self.clientConf["nameServer"]["nsPort"]
+
+		ns = Pyro4.locateNS(host=nsHost,port=nsPort)
+
+		daemon_uris = []
+		daemonNames = []
+
+		for daemonName, daemon_uri in ns.list(prefix="WAM.").items():
+			daemon_uris.append(daemon_uri)
+			daemonNames.append(daemonName)
+
+		if not daemon_uris:
+			print("*** ERROR: No server daemons found!")
+		
+		daemons = zip(daemon_uris,daemonNames)
+		return daemons
+
+	## findFiles Method
+	# Returns all filenames from path (where) with given shell pattern (which)
+	def findFiles(self,which,where="."):
+		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
+		return [name for name in os.listdir(where) if rule.match(name)]
+
+	def loadClientConfFile(self):
+		with self.confFileLock:
+			filePath = os.path.join(self.clientScriptDirectory,"clientConf.json")
+			self.clientConf = parseJSONFile(filePath)
+
+	def loadServerConfFile(self,host):
+		try:
+			connectedServer = self.connectToServer(host)
+			self.serverConfFile = connectedServer.loadServerConfFile()
+		except Exception as e:
+			print("*** ERROR: unable to get server configuration file: {0}".format(e))
+			sys.exit(1)	
 
 def main():
 	front_end_client = frontEndClient(sys.argv)
