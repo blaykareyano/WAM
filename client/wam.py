@@ -191,7 +191,7 @@ To quit the procedure enter: exit
 		elif self.opSystem == "Linux":
 			pass
 		else:
-			print("*** ERROR: Incompatible operating system. Exiting.")
+			print("*** ERROR: Incompatible operating system, exiting")
 			sys.exit(1)
 
 	## submitBatch Method
@@ -313,7 +313,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		else:
 			files = [jobName+".msg",jobName+".dat",jobName+".odb",jobName+".sim",jobName+".prt"]
@@ -325,7 +325,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 
 	## monitor Method
@@ -374,7 +374,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		else:
 			files = [jobName+".msg",jobName+".dat",jobName+".sta","*.log"]
@@ -386,7 +386,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system. Exiting.")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		tmp = open(os.path.join(destination,"out.log"),"r")
 		tmp = tmp.read()
@@ -545,7 +545,7 @@ MA  02110-1301, USA.
 			daemonNames.append(daemonName)
 
 		if not daemon_uris:
-			print("*** ERROR: No server daemons found!")
+			print("*** ERROR: no server daemons found")
 		
 		daemons = zip(daemon_uris,daemonNames)
 		return daemons

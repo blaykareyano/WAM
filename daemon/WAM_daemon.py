@@ -94,7 +94,7 @@ class serverDaemon(object):
 		jsonFile = os.path.join(jobDirectory,"abaqusSubmit.json")
 		jobData = parseJSONFile(jsonFile)
 
-		logging.info("Job {0} submission JSON loaded".format(self.jobID))
+		logging.info("job {0} submission JSON loaded".format(self.jobID))
 
 		subTime = datetime.datetime.now().strftime("%B %d - %H:%M %p")
 		jobData["InternalUse"]["submissionTime"] = subTime
@@ -119,7 +119,7 @@ class serverDaemon(object):
 		with self.jobListLock:
 
 			job["InternalUse"]["status"] = "queue"
-			logging.info("Job {0} added to queue".format(job["InternalUse"]["jobID"]))
+			logging.info("job {0} added to queue".format(job["InternalUse"]["jobID"]))
 
 			self.jobs.append(job)
 			self.serializeJobList()
@@ -195,11 +195,11 @@ class serverDaemon(object):
 					os.chown(stdOutFile, currentUserID, -1)
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
-						logging.info("Job {0} has been submitted for analysis".format(JobID))
+						logging.info("job {0} has been submitted for analysis".format(JobID))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
-						logging.info("Job {0} has completed".format(JobID))
+						logging.info("job {0} has completed".format(JobID))
 					except Exception as e:
 						cmd = " ".join(cmd)
 						err.write("*** ERROR: command line error\n")
@@ -207,8 +207,8 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("Error running Abaqus: {0}".format(JobID))
-						logging.error("Error encountered while executing: {0}".format(cmd))
+						logging.error("error running Abaqus: {0}".format(JobID))
+						logging.error("error encountered while executing: {0}".format(cmd))
 
 			elif self.opSystem == "Windows":
 				with open(stdOutFile,"a+") as out, open(stdErrorFile,"a+") as err:
@@ -216,7 +216,7 @@ class serverDaemon(object):
 						cmd[0] = "C:\\SIMULIA\\Commands\\abaqus.bat"
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, cwd=cwd)
 						self.currentSubProcess.wait()
-						logging.info("Job {0} has completed".format(JobID))					
+						logging.info("job {0} has completed".format(JobID))					
 						self.currentSubProcess = None
 					except:
 						cmd = " ".join(cmd)
@@ -225,8 +225,8 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("Error running Abaqus: {0}".format(JobID))
-						logging.error("Error encountered while executing: {0} \n".format(cmd))
+						logging.error("error running Abaqus: {0}".format(JobID))
+						logging.error("error encountered while executing: {0} \n".format(cmd))
 
 			# post job cleanup
 			self.currentJobID = None
@@ -405,9 +405,9 @@ class serverDaemon(object):
 
 					except:
 						if self.serverConf["nameServer"]["quitOnNameServerConnectionError"]:
-							logging.error("cannot connect to name server ({0}:{1})! Exiting script".format(nsHost,nsPort))
+							logging.error("cannot connect to name server ({0}:{1}), exiting script".format(nsHost,nsPort))
 							sys.exit(1)
-						logging.error("cannot connect to name server ({0}:{1})! Attempting to reconnect in {2} minutes".format(nsHost,nsPort,reconnectTime))
+						logging.error("cannot connect to name server ({0}:{1}), attempting to reconnect in {2} minutes".format(nsHost,nsPort,reconnectTime))
 					
 					time.sleep(reconnectTime*60)
 
@@ -429,7 +429,7 @@ def main():
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
 		logging.info("starting daemon on {0}:{1}".format(myIP,server_daemon.serverConf["usePortNumber"]))
 	except: # otherwise send error
-		logging.error("unable to connect to network! Exiting script")
+		logging.error("unable to connect to network, exiting script")
 		sys.exit(1)
 
 	daemon_uri = daemon.register(server_daemon,objectId="WAM." + socket.gethostname())
