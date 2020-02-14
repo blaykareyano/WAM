@@ -17,5 +17,16 @@
         "nameServerPort" : 9999,            // name server port # 
         "quitOnNameServerConnectionError" : false, // stop server in case of failure?
         "reconnectToNameServer_minutes" : 5 // check connection to name server every N minutes
+    },
+
+    "emailServer" : {                            // outbound email server
+        "SMTPServer" : "TeamMailRelay.teamindustrialservices.com",   // smtp server address (ex: smtp.yahoo.com)
+        "SMTPPort" : "25",                     // port number on smtp server
+        "username" : "analysissubmissionsystem@teaminc.com",                       
+        "password" : "",                       // leave password blank if the server does
+                                               //  not require authentication
+        "emailInfoEncrypted" : false,   // is the above email configuration information b64 encrypted? If false, 
+                                        // it should be specified as plain text (bad idea)
+        "useStarttls" : false   // does the server use startls encryption? (http://en.wikipedia.org/wiki/STARTTLS)      
     } 
 }

@@ -48,10 +48,11 @@ class frontEndClient(object):
 		# Job submission arguments
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
 		self.parser.add_argument("-a", "--all", help="Submit all files in directory", action="store_true")
+		self.parser.add_argument("-j", "--job", help="Submit specified job", type=str, nargs='?', metavar="jobName", action="store")
 		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", default=1, action="store")
 		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", default=0, action="store")
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
-		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', metavar="soandso@email.com", default=None, action="store")
+		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', metavar="Seymour.Butz@email.com", default=None, action="store")
 
 		# Other job controls
 		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
@@ -74,6 +75,10 @@ class frontEndClient(object):
 		# Execute provided arguments
 		if userArgs.batch:
 			self.submitBatch(userArgs.all,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			sys.exit(0)
+
+		if userArgs.job:
+			self.submitJob(userArgs.job,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
 			sys.exit(0)
 
 		if userArgs.get:
@@ -267,6 +272,83 @@ To quit the procedure enter: exit
 			print("*** ERROR: unable to submit job: {0}".format(e))
 			sys.exit(1)
 
+	def submitJob(self,jobName,host,cpus,gpus,email):
+		# get current working directory
+		currentDirectory = os.getcwd()
+
+		# create list of files to send over
+		inputFiles = []
+		jobNameSplit = string.split(jobName,".")
+		if len(jobNameSplit)>1:
+			inputFiles.append(jobName)
+		else:
+			jobName = jobName + ".inp"
+			inputFiles.append(jobName)
+
+		# open template job info JSON file
+		with open(os.path.join(self.clientScriptDirectory,r"utils",r"abaqusSubmit.json.tmpl"), "r") as tmp:
+			jsonTemplate = tmp.read()
+
+		# create a dictionary with job submission information
+		jobInfo = {}
+		jobInfo["emailAddress"] = email
+		jobInfo["nCPUs"] = cpus
+		jobInfo["nGPUs"] = gpus
+		jobInfo["jobFiles"] = json.dumps(inputFiles)
+		jobInfo["clientUserName"] = self.userName
+
+		# write dictionary to JSON template file
+		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
+
+		if self.jsonFileName is None:
+			self.jsonFileName = os.path.join(currentDirectory,"abaqusSubmit.json")
+
+		with open(self.jsonFileName, "w") as tmp:
+			tmp.write(jsonOutFile)
+
+		inputFiles.append(self.jsonFileName)
+
+		# validate input file info
+		jobData = parseJSONFile(self.jsonFileName)
+		assert "InternalUse" in jobData.keys(), "JSON file ({0}) is missing the InternalUse block.".format(jsonFile)
+		assert jobData["InternalUse"]["jsonFileType"] == "abaqus", "Invalid job type: {0}".format(jobData["InternalUse"]["jsonFileType"])
+
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+
+		# connect to defined host
+		connectedServer = self.connectToServer(host)
+
+		# get configuration file from daemon
+		self.loadServerConfFile(host)
+
+		# create job ID with server
+		try:
+			self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
+			[jobID, self.jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
+			print("Job ID: {0}".format(jobID))
+		except Exception as e:
+			print("*** ERROR: unable to initialize job: {0}".format(e))
+			sys.exit(1)
+
+		# send job files to server
+		self.scpJobFiles(inputFiles, host)
+
+		# submit job files
+		try:
+			connectedServer.jobDefinition(self.jobDirectory)
+			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
+		except Exception as e:
+			print("*** ERROR: unable to submit job: {0}".format(e))
+			sys.exit(1)	
+
 	## getJob Method
 	# retrieves job files for specified job ID
 	def getJob(self,jobID,host):
@@ -313,7 +395,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system, exiting")
+				print("*** ERROR: incompatible operating system, exiting")
 				sys.exit(1)
 		else:
 			files = [jobName+".msg",jobName+".dat",jobName+".odb",jobName+".sim",jobName+".prt"]
@@ -325,7 +407,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: Incompatible operating system, exiting")
+				print("*** ERROR: incompatible operating system, exiting")
 				sys.exit(1)
 
 	## monitor Method
@@ -452,6 +534,8 @@ To quit the procedure enter: exit
 
 		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
 
+	## queryAllQueues Method
+	# Looks through all servers and gathers queue info (host, user, job ID, status)
 	def queryAllQueues(self):
 		sys.excepthook = Pyro4.util.excepthook
 

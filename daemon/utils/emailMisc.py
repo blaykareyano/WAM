@@ -20,14 +20,10 @@ def sendEmailMsg(message, subject, recipient, sender, senderPassword, smtpServer
 
     try:
         if logging is not None:
-            logging.info("Sending an email to: %s"%(recipient))
+            logging.info("sending an email to: {0}".format(recipient))
 
         body = "" + message + ""
-        headers = ["From: " + sender,
-                   "Subject: " + subject,
-                   "To: " + recipient,
-                   "MIME-Version: 1.0",
-                   "Content-Type: text/plain"]
+        headers = ["From: "+sender, "Subject: "+subject, "To: "+recipient, "MIME-Version: 1.0", "Content-Type: text/plain"]
         headers = "\r\n".join(headers)
 
         session = smtplib.SMTP(smtpServer, int(smtpServerPort))
@@ -43,7 +39,7 @@ def sendEmailMsg(message, subject, recipient, sender, senderPassword, smtpServer
         session.quit()
 
         if logging is not None:
-            logging.info("Done sending email to: %s"%(recipient))
+            logging.info("done sending email to: {0}".format(recipient))
     
     except Exception as e:
         if logging is not None:

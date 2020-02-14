@@ -19,6 +19,7 @@ import multiprocessing
 import logging
 import copy
 import string
+import base64
 from subprocess import CalledProcessError, check_output
 
 # 3rd Party Packages
@@ -28,6 +29,7 @@ from psutil import virtual_memory # https://pypi.org/project/psutil/
 
 # Local Source Packages
 from utils.parseJSONFile import parseJSONFile
+from utils.emailMisc import sendEmailMsg
 
 # Pyro4 configuration options
 Pyro4.config.COMMTIMEOUT = 10.0
@@ -151,10 +153,10 @@ class serverDaemon(object):
 			cpus = job["solverFlags"]["cpus"]
 			gpus = job["solverFlags"]["gpus"]
 			jobName = job["jobName"]
-			JobID = job["InternalUse"]["jobID"]
+			jobID = job["InternalUse"]["jobID"]
 			solver = job["InternalUse"]["jsonFileType"]
 
-			self.currentJobID = JobID
+			self.currentJobID = jobID
 			self.currentJobNumber = job["InternalUse"]["jobNumber"]
 
 			# compile command line options
@@ -195,11 +197,11 @@ class serverDaemon(object):
 					os.chown(stdOutFile, currentUserID, -1)
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
-						logging.info("job {0} has been submitted for analysis".format(JobID))
+						logging.info("job {0} has been submitted for analysis".format(self.currentJobID))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
-						logging.info("job {0} has completed".format(JobID))
+						logging.info("job {0} has completed".format(self.currentJobID))
 					except Exception as e:
 						cmd = " ".join(cmd)
 						err.write("*** ERROR: command line error\n")
@@ -207,8 +209,53 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("error running Abaqus: {0}".format(JobID))
+						logging.error("error running Abaqus: {0}".format(self.currentJobID))
 						logging.error("error encountered while executing: {0}".format(cmd))
+
+					# send email on completion (if requested)
+					if job["advanced"]["sendEmailTo"]:
+						message = None
+
+						# get the msg file contents:
+						with open("{0}.msg".format(jobName),"r") as out:
+
+							# get server data:
+							SMTPServer = self.serverConf["emailServer"]["SMTPServer"]
+							SMTPPort   = self.serverConf["emailServer"]["SMTPPort"]
+							username   = self.serverConf["emailServer"]["username"]
+							password   = self.serverConf["emailServer"]["password"]
+							emailInfoEncrypted = self.serverConf["emailServer"]["emailInfoEncrypted"]
+							useStarttls   = self.serverConf["emailServer"]["useStarttls"]
+
+
+							if emailInfoEncrypted:
+								SMTPServer = base64.b64decode(SMTPServer)
+								SMTPPort   = base64.b64decode(SMTPPort)
+								username   = base64.b64decode(username)
+								password   = base64.b64decode(password)
+
+
+							data  = out.readlines()
+							logFileLines = data[-100::]
+							message = []
+							message.append("Finished running: {0}.inp \r\n\n *** The end of {0}.msg reads: \r\n\r\n".format(jobName))
+							for line in logFileLines:
+								message.append(line.strip() + "\r\n")
+
+						# get the status file contents if the file exists:
+						if os.path.isfile("{0}.sta".format(jobName)):
+							with open("{0}.sta".format(jobName),"r") as sta:
+								data  = sta.readlines()
+								staFileLines = data[-100::]
+								message.append("\r\n *** The end of {0}.sta reads: \r\n\r\n".format(jobName))
+								for line in staFileLines:
+									message.append(line.strip() + "\r\n")
+
+						if message is not None:
+							message = "".join(message)
+							recipient = job["advanced"]["sendEmailTo"]
+							subject = "WAM Run Complete ({0})".format(self.currentJobID)
+							sendEmailMsg(message, subject, recipient, username, password, SMTPServer, SMTPPort, useStarttls, logging)
 
 			elif self.opSystem == "Windows":
 				with open(stdOutFile,"a+") as out, open(stdErrorFile,"a+") as err:
@@ -216,7 +263,7 @@ class serverDaemon(object):
 						cmd[0] = "C:\\SIMULIA\\Commands\\abaqus.bat"
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, cwd=cwd)
 						self.currentSubProcess.wait()
-						logging.info("job {0} has completed".format(JobID))					
+						logging.info("job {0} has completed".format(self.currentJobID))					
 						self.currentSubProcess = None
 					except:
 						cmd = " ".join(cmd)
@@ -225,7 +272,7 @@ class serverDaemon(object):
 						err.write("Error encountered while executing: {0} \n".format(cmd))
 						err.write("\n")
 
-						logging.error("error running Abaqus: {0}".format(JobID))
+						logging.error("error running Abaqus: {0}".format(self.currentJobID))
 						logging.error("error encountered while executing: {0} \n".format(cmd))
 
 			# post job cleanup
@@ -259,7 +306,7 @@ class serverDaemon(object):
 		msgs = []
 
 		with self.jobListLock:
-			for job in self.jobs[::-1]:
+			for job in self.jobs[::-1]: # iterate backwards so we dont skip jobs
 				if jobName == None:
 					jobRef = job["InternalUse"]["jobNumber"]
 					curJobRef = self.currentJobNumber
@@ -310,7 +357,7 @@ class serverDaemon(object):
 				deltaTime = now - self.start
 				hours, remainder = divmod(deltaTime.seconds, 3600)
 				minutes, seconds = divmod(remainder, 60)
-				deltaTime = ("dt: {0}:{1}:{2}".format(hours,minutes,seconds))
+				deltaTime = ("({0:d}:{1:02d}:{2:02d})".format(hours,minutes,seconds))
 				tmp.append("{0} {1}".format(job["InternalUse"]["status"],deltaTime))
 				jobsRunning = jobsRunning + 1
 			else:
