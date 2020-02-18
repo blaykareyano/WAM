@@ -57,7 +57,7 @@ class frontEndClient(object):
 		# Other job controls
 		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
 		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id. Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
-		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job.", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job. If killing multiple jobs, separate each job ID with a space", type=str, nargs='+', metavar="job# or job#:jobName", action="store")
 		
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
@@ -476,7 +476,7 @@ To quit the procedure enter: exit
 
 	## killJob method
 	# kills job given a jobID
-	def killJob(self,jobID,host):
+	def killJob(self,jobIDs,host):
 		# check to make sure a host was specified
 		if host == None:
 			while True:
@@ -489,10 +489,10 @@ To quit the procedure enter: exit
 
 		connectedServer = self.connectToServer(host)
 
-		msgs = connectedServer.killJob(jobID,self.userName)
-		
-		for msg in msgs:
-			print(msg)
+		for jobID in jobIDs:
+			msgs = connectedServer.killJob(jobID,self.userName)
+			for msg in msgs:
+				print(msg)
 
 	## queryAllServers Method
 	# Looks through all servers and gathers machine info (cores, avail. memory, IP addr)

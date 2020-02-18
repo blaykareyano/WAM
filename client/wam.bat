@@ -1,2 +1,5 @@
 @echo off
-python C:\Users\b.arellano\Documents\GitHub\WAM\client\wam.py %*
+SET currpath=%~dp0
+SET script=wam.py
+SET scriptpath=%currpath%%script%
+python %scriptpath% %*

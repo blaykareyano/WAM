@@ -82,6 +82,7 @@ class serverDaemon(object):
 		
 		try:
 			os.mkdir(jobDirectory)
+			os.chmod(jobDirectory, 0o777)
 			logging.info("directory made for job: {0}".format(self.jobID))
 		except OSError as e:
 			logging.error("unable to create job directory for job {0}: {1}".format(self.jobID,e))
@@ -183,6 +184,7 @@ class serverDaemon(object):
 				env[ 'LOGNAME'  ]  = user_name
 				env[ 'PWD'      ]  = jobDirectory
 				env[ 'USER'     ]  = user_name
+				env[ 'PATH'		]  = '/var/DassaultSystemes/SIMULIA/Commands:/sbin:/bin:/usr/sbin:/usr/bin'
 
 				# spawn subprocess as a given user
 				def demote(user_uid, user_gid):
@@ -198,15 +200,21 @@ class serverDaemon(object):
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
 						logging.info("job {0} has been submitted for analysis".format(self.currentJobID))
+						err.write("cwd={0}\nuser_uid={1}\nuser_gid={2}\nenv={3}".format(cwd,user_uid,user_gid,env))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
 						logging.info("job {0} has completed".format(self.currentJobID))
+
 					except Exception as e:
+
+						self.currentSubProcess = None
+
 						cmd = " ".join(cmd)
 						err.write("*** ERROR: command line error\n")
 						err.write(str(e)+"\n")
 						err.write("Error encountered while executing: {0} \n".format(cmd))
+						err.write("cwd={0}\nuser_uid={1}\nuser_gid={2}\nenv={3}".format(cwd,user_uid,user_gid,env))
 						err.write("\n")
 
 						logging.error("error running Abaqus: {0}".format(self.currentJobID))
@@ -430,8 +438,6 @@ class serverDaemon(object):
 			logging.root.removeHandler(handler)
 
 		logging.basicConfig(filename=logFile, level=logging.DEBUG, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-		# logging.getLogger("Pyro4").setLevel(logging.DEBUG)
-		# logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
 
 	## connectToNameServer Method
 	# connects to name server at the location defined in serverConf.JSON

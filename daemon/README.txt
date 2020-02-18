@@ -1,10 +1,7 @@
 |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-| Instructions for installation of Pyro4 naming server 	|
+| Instructions for installation of WAM Daemon		 	|
 | Blake Arellano - 2020									|
 |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-
-*** Only install on one dedicated machine
-*** Having more than one naming server running is bad m'kay
 
 1-) install Pyro4 and other needed packages:
 	a-) install python packaging library 
@@ -20,18 +17,22 @@
 	f-) install psutil using pip
 		$ sudo pip install psutil
 
-2-) install Pyro4 naming server:
+2-) place WAM folder into opt directory:
+	a-) copy all WAM files to opt directory
+		$ sudo -R cp ./WAM /opt
+
+4-) install WAM daemon executable:
 	a-) copy the naming server executable to init.d
 		~ this will force run executable on sys startup
-		$ sudo cp ./pyro4NamingServer /etc/init.d
+		$ sudo cp ./wamDaemon /etc/init.d	
 	b-) change permissions to make executable
-		$ sudo chmod +x /etc/init.d/pyro4NamingServer
+		$ sudo chmod +x /etc/init.d/wamDaemon	
 	c-) start up the executable
-		$ sudo /etc/init.d/pyro4NamingServer start
+		$ sudo /etc/init.d/wamDaemon start
 	d-) enable the executable to run on startup
 		$ sudo systemctl enable wamDaemon.service
 
-3-) set firewall settings
+5-) set firewall settings
 	a-) check current state of firewall
 		$ sudo firewall-cmd --state
 		-> should report: running

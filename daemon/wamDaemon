@@ -1,6 +1,6 @@
 #!/bin/bash
-# chkconfig: 345 96 02
-# description: Pyro4 Naming Server for WAM
+# chkconfig: 345 99 02
+# description: WAM Daemon Server
 
 # -------------------------------------------------------------------------
 #    <Pyro4 NameServer Script>
@@ -21,11 +21,10 @@
 # -------------------------------------------------------------------------
 
 
-LISTEN_ADDRESS=0.0.0.0
-LISTEN_PORT=9999
-MESSAGEDIR=/var/log/Pyro4
-MESSAGELOG=/var/log/Pyro4/NameServer.log
-PID=/var/run/Pyro4-NameServer.pid
+
+MESSAGEDIR=/opt/WAM/daemon/logs/
+MESSAGELOG=/opt/WAM/daemon/logs/server.log
+PID=/var/run/WAM_daemon.pid
 
 # Add Pyro Config
 # here you can add others ...
@@ -43,26 +42,27 @@ touch $PID
 
 case "$1" in
   start)
+
     # create the log directory if not exist
     [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
 
-    echo "Starting Pyro4 Name Server"
+    echo "Starting WAM Daemon"
     # test if not already running
     if [ ! -f "/proc/$(cat $PID)/exe" ]; then
-      python -m Pyro4.naming -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
+      python /opt/WAM/daemon/WAM_daemon.py >/dev/null 2>&1 &
       echo $!>"$PID"
     else
-      echo "Pyro4 Name Server already running"
+      echo "WAM Server already running"
     fi
     ;;
   stop)
-    echo "Stopping Pyro4 Name Server"
+    echo "Stopping WAM Server"
     # test if running
     if [ -f "/proc/$(cat $PID)/exe" ]; then
       kill -9 "$(cat $PID)"
       rm -rf "$PID"
     else
-      echo "Pyro4 Name Server already stopped"
+      echo "WAM Server already stopped"
     fi
     ;;
   restart)
