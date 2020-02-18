@@ -19,7 +19,7 @@
 
 2-) place WAM folder into opt directory:
 	a-) copy all WAM files to opt directory
-		$ sudo -R cp ./WAM /opt
+		$ sudo -R cp ./WAM /opt/WAM
 
 4-) install WAM daemon executable:
 	a-) copy the naming server executable to init.d
@@ -30,7 +30,11 @@
 	c-) start up the executable
 		$ sudo /etc/init.d/wamDaemon start
 	d-) enable the executable to run on startup
+		$ sudo systemctl daemon-reload
 		$ sudo systemctl enable wamDaemon.service
+	e-) test that it is starting up properly
+		$ sudo systemctl reboot
+		$ sudo systemctl status wamDaemon.service
 
 5-) set firewall settings
 	a-) check current state of firewall

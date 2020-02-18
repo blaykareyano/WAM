@@ -351,7 +351,7 @@ class serverDaemon(object):
 		logging.info("HPC information requested from client")
 		
 		# Get total memory and convert from bytes to Gb
-		totMem = int(self.mem.total/1000000000) # convert from bytes to gb
+		totMem = int(self.mem.total/1024.0 ** 3) # convert from bytes to gb
 
 		jobsQueue = 0
 		jobsRunning = 0
