@@ -14,6 +14,8 @@ import argparse
 import string
 import re, fnmatch
 import json
+import winsound
+from subprocess import check_output
 from string import Template
 
 # 3rd Party Packages
@@ -22,10 +24,6 @@ from tabulate import tabulate
 
 # Local Source Packages
 from utils.parseJSONFile import parseJSONFile
-
-# Global Configuration Options
-Pyro4.config.COMMTIMEOUT = 90.0
-# sys.tracebacklimit = 0
 
 # Development Version
 version = str(0.0)
@@ -39,6 +37,9 @@ class frontEndClient(object):
 		self.jsonFileName = None	# define default jsonFileName initialization
 		self.confFileLock = threading.Lock()
 		self.loadClientConfFile()
+		self.defaultEmail = self.clientConf["defaults"]["email"]
+		self.defaultFileTypes = self.clientConf["defaults"]["fileTypes"]
+		self.defaultMonitorFileTypes = self.clientConf["defaults"]["monitorFileTypes"]
 		self.runDirectory = None	# folder that job is created in
 		self.jobDirectory = None	# folder that job in run in
 
@@ -52,7 +53,7 @@ class frontEndClient(object):
 		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", default=1, action="store")
 		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", default=0, action="store")
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
-		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to", type=str, nargs='?', metavar="Seymour.Butz@email.com", default=None, action="store")
+		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to using email from clientConf.json", action="store_const", const=self.defaultEmail)
 
 		# Other job controls
 		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
@@ -62,7 +63,9 @@ class frontEndClient(object):
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
 		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server", action="store_true")
+		self.parser.add_argument("-tc","--tokenConvert", help="displays cores to license tokens conversion table",action="store_true")
 		self.parser.add_argument("-about", help="See WAM version, author, and license info", action="store_true")
+		self.parser.add_argument("-ham", help="try it and find out.... Sound on recommended", action="store_true")
 		
 		# if no inputs given display WAM help
 		if len(sys.argv)==1: 
@@ -101,8 +104,16 @@ class frontEndClient(object):
 			self.queryAllQueues()
 			sys.exit(0)
 
+		if userArgs.tokenConvert:
+			self.tokenConvert()
+			sys.exit(0)
+
 		if userArgs.about:
 			self.printAbout()
+			sys.exit(0)
+
+		if userArgs.ham:
+			self.ham()
 			sys.exit(0)
 
 	## findSimulationFiles Method
@@ -272,6 +283,8 @@ To quit the procedure enter: exit
 			print("*** ERROR: unable to submit job: {0}".format(e))
 			sys.exit(1)
 
+	## submitJob Method
+	# does same as submit batch, but for only one defined job
 	def submitJob(self,jobName,host,cpus,gpus,email):
 		# get current working directory
 		currentDirectory = os.getcwd()
@@ -386,7 +399,7 @@ To quit the procedure enter: exit
 		destination = os.getcwd()
 
 		if jobName == None:
-			files = ["*.msg","*.dat","*.odb","*.sim","*.prt"]
+			files = self.defaultFileTypes
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -398,7 +411,10 @@ To quit the procedure enter: exit
 				print("*** ERROR: incompatible operating system, exiting")
 				sys.exit(1)
 		else:
-			files = [jobName+".msg",jobName+".dat",jobName+".odb",jobName+".sim",jobName+".prt"]
+			files = [jobName + fileExt[1:] for fileExt in self.defaultFileTypes]
+			files = files[:-1]
+			files.append("out.log")
+			files.append("error.log")
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -447,7 +463,7 @@ To quit the procedure enter: exit
 		destination = os.getcwd()
 
 		if jobName == None:
-			files = ["*.msg","*.dat","*.sta","*.log"]
+			files = self.defaultMonitorFileTypes
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -459,7 +475,10 @@ To quit the procedure enter: exit
 				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		else:
-			files = [jobName+".msg",jobName+".dat",jobName+".sta","*.log"]
+			files = [jobName + fileExt[1:] for fileExt in self.defaultMonitorFileTypes]
+			files = files[:-1]
+			files.append("out.log")
+			files.append("error.log")
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
@@ -499,6 +518,9 @@ To quit the procedure enter: exit
 	def queryAllServers(self):
 		sys.excepthook = Pyro4.util.excepthook
 		
+		# get licensing info
+		self.getLicenseInfo()
+
 		# Initialize the table
 		headers = ["Host Name", "IP Address", "Cores", "Total Memory", "Job Queue Length"]
 		table = []
@@ -539,8 +561,11 @@ To quit the procedure enter: exit
 	def queryAllQueues(self):
 		sys.excepthook = Pyro4.util.excepthook
 
+		# get licensing info
+		self.getLicenseInfo()
+
 		# Initialize the table
-		headers = ["Host Name", "Username", "Job ID", "Status"]
+		headers = ["Host Name", "Username", "Job ID", "Status", "Est. Tokens"]
 		table = []
 
 		# Find all daemon servers and loop through them
@@ -557,6 +582,7 @@ To quit the procedure enter: exit
 					tmp.append(job[0]) # username
 					tmp.append(job[1]) # job ID
 					tmp.append(job[2]) # status
+					tmp.append(str(int(5*job[3]**0.422))) # cores being used (cpus and gpus)
 
 					table.append(tmp[:])
 
@@ -566,12 +592,25 @@ To quit the procedure enter: exit
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
+				tmp.append("ERROR")
 
 				table.append(tmp[:])
 				print("*** ERROR: {0}".format(e))
 				pass
 
 		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
+
+	def tokenConvert(self):
+		cores = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+		tokens = [int(5*core**0.422) for core in cores]
+		cores.insert(0,"Cores")
+		tokens.insert(0,"Tokens")
+
+		table = []
+		table.append(cores)
+		table.append(tokens)
+
+		print(tabulate(table,tablefmt="presto",numalign="center"))
 
 	## printAbout Method
 	# Pretty self explanatory I believe
@@ -640,6 +679,15 @@ MA  02110-1301, USA.
 		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
 		return [name for name in os.listdir(where) if rule.match(name)]
 
+	def getLicenseInfo(self):
+		licenseText = check_output('abaqus licensing -ru', shell=True)
+		lines = []
+		for line in licenseText.split('\n'):
+			if "Users of abaqus" in line:
+				lines.append(line)
+
+		print("\n",lines[1])
+
 	def loadClientConfFile(self):
 		with self.confFileLock:
 			filePath = os.path.join(self.clientScriptDirectory,"clientConf.json")
@@ -651,7 +699,81 @@ MA  02110-1301, USA.
 			self.serverConfFile = connectedServer.loadServerConfFile()
 		except Exception as e:
 			print("*** ERROR: unable to get server configuration file: {0}".format(e))
-			sys.exit(1)	
+			sys.exit(1)
+
+	def ham(self):
+		print(r"""
+			                           `::..   .
+                       `?XXX.  `T{/:.   %X/!!x "?x.
+                         "4{7@( '!+!!X(:.`4!!X!x.?h7h
+                     `!(:. ~!!!f(~!!!+!!{{.'~+h!tX!!?hh:.
+                '`X!.  !(d!X!!H!?{{``"!:?{{!{X*!?tX!!H*))h.
+              ...  '!X(!X!{{?@f!!!{!{x.!!%!!!%!!!)@Thh!!X)!).
+               ^!!!{:!(((!!: ~((({!!!h+!{{!X!+%?+{!!?!+)!+X(!+
+           -    `\tXX{(~!!!!!:.!.%%(!!!!!!!!!X!))!!!!X%``%!!!(>
+           ^X>:x. {!!!!X: ~!!*!{!!!{!~!X!)%!{!!!)?@!!!?!)?!!!>~
+             `X(!!:!!!{{(!!.)!%(:\!!:%~!~\!t!! `H!)~~!!!!!!(?@
+              `!X: `)!!!C44XX!!!.%%.X:>-> %!!X! /!~!.'!> !S!!!
+          +{..  \X%\.'{??X!!!t!!~!!{!~!~'.!~~~ -~` {> !~ /!X`
+            `X!XXM!!4!%\(4!!!!%(`,zccccd$$$$$$$$$ccx ` .~
+              "XLS@!)!!%L44X!!! d$$$$$$$$$$$$$$$$$$$,  '^
+               `!X?%:!!??X!4?*';$$$$$$$$$$$$$$$$$$$$$
+              `iXM:!!?Xt!XH!!! 9$$$$$$$$$$$$$$$$$$$$$
+               `X3tiXS#?WH!X!! $$$$$$$$$$$$$$$$$$$$$$
+               .MX?*StXX?X!!W? $$$$$$$>?$$$$$$$$$$$$
+                8??M%T%' r `  ;$$$$$$$$$,?$$$$$$$$$F
+                'StMX!': J$$d$$$$$$$$$$$$h ?$$$$$$"
+                 tM9MH d$$$$$$$$$$$$$$C???r{$$$F,r
+                 4M?t':$$$$$$$$$$$$$$$$h. $$$,cP"
+                 'M>.d$$$$$$$$$$$$$$$$$>d$$${.,
+                  ,d$$$$$$$$$$$$$$$$$'cd$$$$r"
+                  `$$$$$$$$$$$$$$$??$Jcii`?$h
+                   $$$$$$$$$$$$$F,;;, "?h,`$$h
+                  j$$$$$$$$$$$$$.CC>>>>c`"  `"        ..,g q,
+               .'!$$$$$$$$$$$$$' `''''''            aq`?g`$.Bk
+           ,- '  "?$$$$$$$$$$$$$$d$$$$$c, .         .)od$$$$$$
+      , -'           `""'   `"?$$$$$$$$$??=      .d$$$$$$$$F'
+    ,'                           `??$$P       .ed$$P""   `
+   ,                                `.      z$$$"
+   `:dbe,                          x,/    e$$F'
+   :$$$$P'`>                       $F  z$$$"
+  d$$$P"'  >                       $Fe$$$"
+.$$$?F     ;                       $$$$"
+$$$$$$eeu. >                       >P"
+ `""???$$$$$eu,._''uWb,            )
+           `""??$P$$$$$$b.         :
+            >     ?$$$"'           {
+            F      `"              `:
+            >                       `>
+            >                        ?
+           J                          :
+           X                ..  .     ?
+           "{ 4{!~;/'!>{`~{>~.>! ~! '"
+            '>!>=.%=.;~~>~4~`{'>>>~!
+             4'!/>!\\!{~~:/{;!{;`;/=':
+             `=;!~:`~!>{.-; "(>=.':!;'
+              :;=.~{`;`~>!~> ?!/>>~!!{'
+              ~:~'!!;`;`~:>); ;(.uJL!~~
+                >L.(.:,L;L:-+d$$$$$$
+                :4$$$$$$$L   ?$$#$$$>
+                 '$$$B$$$>    $$$MB$&
+                  $$$$$$$      $$$@$F
+                  `$$$$$$>     R$$$$
+                   $$$$$$     {$$@$P
+                   $R$$$R     `!)=!>
+                   $$$6T       $$$$'
+                   $$R$B      ;$$$F,._
+                   !=!(!    .'        ``= .
+                   $$$$F    (.             '\
+                 ,{$$$$(      ``~'`` --:.._.,)
+                ;   ``  `-.
+                (          "\.
+                 ` -{._       ".
+                       `~:,._ .: """)
+
+		# HAM HORRRNNNNN
+		HAM = os.path.join(self.clientScriptDirectory,"utils","HAM.wav")
+		winsound.PlaySound(HAM, winsound.SND_FILENAME)
 
 def main():
 	front_end_client = frontEndClient(sys.argv)

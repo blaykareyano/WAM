@@ -32,7 +32,7 @@ from utils.parseJSONFile import parseJSONFile
 from utils.emailMisc import sendEmailMsg
 
 # Pyro4 configuration options
-Pyro4.config.COMMTIMEOUT = 10.0
+# Pyro4.config.COMMTIMEOUT = 300.0 # timeout in seconds
 
 # Daemon class visible to Pyro client
 @Pyro4.expose
@@ -200,7 +200,6 @@ class serverDaemon(object):
 					os.chown(stdErrorFile, currentUserID, -1)
 					try:
 						logging.info("job {0} has been submitted for analysis".format(self.currentJobID))
-						err.write("cwd={0}\nuser_uid={1}\nuser_gid={2}\nenv={3}".format(cwd,user_uid,user_gid,env))
 						self.currentSubProcess = subprocess.Popen(cmd, stdout=out, stderr=err, preexec_fn=demote(user_uid,user_gid), cwd=cwd, env=env)
 						self.currentSubProcess.wait()
 						self.currentSubProcess = None
@@ -214,7 +213,6 @@ class serverDaemon(object):
 						err.write("*** ERROR: command line error\n")
 						err.write(str(e)+"\n")
 						err.write("Error encountered while executing: {0} \n".format(cmd))
-						err.write("cwd={0}\nuser_uid={1}\nuser_gid={2}\nenv={3}".format(cwd,user_uid,user_gid,env))
 						err.write("\n")
 
 						logging.error("error running Abaqus: {0}".format(self.currentJobID))
@@ -235,13 +233,11 @@ class serverDaemon(object):
 							emailInfoEncrypted = self.serverConf["emailServer"]["emailInfoEncrypted"]
 							useStarttls   = self.serverConf["emailServer"]["useStarttls"]
 
-
 							if emailInfoEncrypted:
 								SMTPServer = base64.b64decode(SMTPServer)
 								SMTPPort   = base64.b64decode(SMTPPort)
 								username   = base64.b64decode(username)
 								password   = base64.b64decode(password)
-
 
 							data  = out.readlines()
 							logFileLines = data[-100::]
@@ -371,6 +367,7 @@ class serverDaemon(object):
 			else:
 				tmp.append(job["InternalUse"]["status"])
 				jobsQueue = jobsQueue + 1
+			tmp.append(job["solverFlags"]["cpus"]+job["solverFlags"]["gpus"])
 
 			jobList.append(tmp[:])
 
