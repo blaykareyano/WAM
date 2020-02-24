@@ -110,6 +110,7 @@ class serverDaemon(object):
 			singleJob["InternalUse"]["jobNumber"] = str(self.jobID)
 			singleJob["InternalUse"]["jobID"] = str(self.jobID)+":"+singleJob["jobName"]
 			singleJob["InternalUse"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobName"]+".inp")
+			singleJob["InternalUse"]["jobDirectory"] = jobDirectory
 
 			logging.info("created job {0}".format(singleJob["InternalUse"]["jobID"]))
 
@@ -125,14 +126,26 @@ class serverDaemon(object):
 			logging.info("job {0} added to queue".format(job["InternalUse"]["jobID"]))
 
 			self.jobs.append(job)
+
+			# sort the job queue by priority
+			try:
+				self.jobs.sort(key=lambda i: (i["InternalUse"]["status"]!="running",i["advanced"]["priority"],i["InternalUse"]["submissionTime"]))
+			except Exception as e:
+				logging.error("unable to prioritize jobs list: {0}".format(e))
+
 			self.serializeJobList()
 
-		threading.Thread(target=self.__runJob, args=(job, jobDirectory, )).start()
-	
+		threading.Thread(target=self.__runJob).start()
+
+
 	## __runJob Private Method
 	# submits each job individually
-	def __runJob(self, job, jobDirectory):
+	def __runJob(self):
 		with self.CPULock:
+			
+			job = self.jobs[0]
+			jobDirectory = job["InternalUse"]["jobDirectory"]
+
 			# check if job has been killed
 			if "killed" in job["InternalUse"]["status"]:
 				return
@@ -219,7 +232,7 @@ class serverDaemon(object):
 						logging.error("error encountered while executing: {0}".format(cmd))
 
 					# send email on completion (if requested)
-					if job["advanced"]["sendEmailTo"]:
+					if job["advanced"]["sendEmailTo"] != "None":
 						message = None
 
 						# get the msg file contents:
@@ -368,6 +381,7 @@ class serverDaemon(object):
 				tmp.append(job["InternalUse"]["status"])
 				jobsQueue = jobsQueue + 1
 			tmp.append(job["solverFlags"]["cpus"]+job["solverFlags"]["gpus"])
+			tmp.append(job["advanced"]["priority"])
 
 			jobList.append(tmp[:])
 

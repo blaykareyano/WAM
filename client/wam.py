@@ -53,6 +53,7 @@ class frontEndClient(object):
 		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", default=1, action="store")
 		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", default=0, action="store")
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
+		self.parser.add_argument("-p","--priority", help="Set the job priority. Default = 1, high priority = 0, low priority = 2", type=int, nargs='?', metavar="#", default=1, action="store")
 		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to using email from clientConf.json", action="store_const", const=self.defaultEmail)
 
 		# Other job controls
@@ -77,11 +78,11 @@ class frontEndClient(object):
 
 		# Execute provided arguments
 		if userArgs.batch:
-			self.submitBatch(userArgs.all,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			self.submitBatch(userArgs.all,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email,userArgs.priority)
 			sys.exit(0)
 
 		if userArgs.job:
-			self.submitJob(userArgs.job,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email)
+			self.submitJob(userArgs.job,userArgs.host,userArgs.cpus,userArgs.gpus,userArgs.email,userArgs.priority)
 			sys.exit(0)
 
 		if userArgs.get:
@@ -212,7 +213,7 @@ To quit the procedure enter: exit
 
 	## submitBatch Method
 	# takes input from parser and submits jobs on selected server
-	def submitBatch(self,selectAll,host,cpus,gpus,email):
+	def submitBatch(self,selectAll,host,cpus,gpus,email,priority):
 		# get current working directory
 		currentDirectory = os.getcwd()
 
@@ -230,6 +231,7 @@ To quit the procedure enter: exit
 		jobInfo["nGPUs"] = gpus
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
+		jobInfo["priority"] = priority
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -285,7 +287,7 @@ To quit the procedure enter: exit
 
 	## submitJob Method
 	# does same as submit batch, but for only one defined job
-	def submitJob(self,jobName,host,cpus,gpus,email):
+	def submitJob(self,jobName,host,cpus,gpus,email,priority):
 		# get current working directory
 		currentDirectory = os.getcwd()
 
@@ -309,6 +311,7 @@ To quit the procedure enter: exit
 		jobInfo["nGPUs"] = gpus
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
+		jobInfo["priority"] = priority
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -565,7 +568,7 @@ To quit the procedure enter: exit
 		self.getLicenseInfo()
 
 		# Initialize the table
-		headers = ["Host Name", "Username", "Job ID", "Status", "Est. Tokens"]
+		headers = ["Host Name", "Username", "Job ID", "Status", "priority", "Est. Tokens"]
 		table = []
 
 		# Find all daemon servers and loop through them
@@ -577,11 +580,20 @@ To quit the procedure enter: exit
 				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
 
 				for job in jobList:
+
+					if job[4] == 0:
+						priority = "High"
+					elif job[4] == 1:
+						priority = "Med"
+					else:
+						priority = "Low"
+
 					tmp = []
 					tmp.append(compName) # hostname
 					tmp.append(job[0]) # username
 					tmp.append(job[1]) # job ID
 					tmp.append(job[2]) # status
+					tmp.append(priority) # job priority
 					tmp.append(str(int(5*job[3]**0.422))) # cores being used (cpus and gpus)
 
 					table.append(tmp[:])
