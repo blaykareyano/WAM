@@ -231,6 +231,18 @@ class serverDaemon(object):
 						logging.error("error running Abaqus: {0}".format(self.currentJobID))
 						logging.error("error encountered while executing: {0}".format(cmd))
 
+					# convert unix2dos
+					fileTypes = [jobName+".fil",jobName+".sta",jobName+".msg",jobName+".dat"]
+					for fileType in fileTypes:
+						cmd = ["unix2dos",fileType]
+						try:
+							self.currentSubProcess = subprocess.Popen(cmd,cwd=cwd)
+							self.currentSubProcess.wait()
+							self.currentSubProcess = None
+							logging.info("converted file {0} using unix2dos".format(fileType))
+						except Exception as e:
+							logging.error("unable to convert file {0} using unix2dos: {1}".format(fileType,e))
+
 					# send email on completion (if requested)
 					if job["advanced"]["sendEmailTo"] != "None":
 						message = None

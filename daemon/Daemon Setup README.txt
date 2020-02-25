@@ -16,6 +16,8 @@
 		$ sudo pip install Pyro4
 	f-) install psutil using pip
 		$ sudo pip install psutil
+	g-) install unix2dos
+		$ sudo yum install unix2dos
 
 2-) place WAM folder into opt directory:
 	a-) copy all WAM files to opt directory
