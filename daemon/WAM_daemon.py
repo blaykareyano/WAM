@@ -137,7 +137,6 @@ class serverDaemon(object):
 
 		threading.Thread(target=self.__runJob).start()
 
-
 	## __runJob Private Method
 	# submits each job individually
 	def __runJob(self):

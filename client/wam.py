@@ -50,8 +50,8 @@ class frontEndClient(object):
 		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
 		self.parser.add_argument("-a", "--all", help="Submit all files in directory", action="store_true")
 		self.parser.add_argument("-j", "--job", help="Submit specified job", type=str, nargs='?', metavar="jobName", action="store")
-		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", default=1, action="store")
-		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", default=0, action="store")
+		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", action="store")
+		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", action="store")
 		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
 		self.parser.add_argument("-p","--priority", help="Set the job priority. Default = 1, high priority = 0, low priority = 2", type=int, nargs='?', metavar="#", default=1, action="store")
 		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to using email from clientConf.json", action="store_const", const=self.defaultEmail)
@@ -118,9 +118,9 @@ class frontEndClient(object):
 			sys.exit(0)
 
 	## findSimulationFiles Method
-	# Searches current directory for all simulation job input files and takes user input on which to run
-	# Returns a list of job paths
-	# Only searching for Abaqus *.inp files (for now)
+	#  Searches current directory for all simulation job input files and takes user input on which to run
+	#  Returns a list of job paths
+	#  Only searching for Abaqus *.inp files (for now)
 	def findSimulationFiles(self,selectAll):
 		# Define variables
 		currentDirectory = os.getcwd()
@@ -194,8 +194,8 @@ To quit the procedure enter: exit
 		return selectedJobs
 
 	## scpJobFiles
-	# sends job files to the server daemon which will run job
-	# \todo linux scp command [Popen]
+	#  sends job files to the server daemon which will run job
+	#  \todo linux scp command [Popen]
 	def scpJobFiles(self,files,host):
 		print("Transferring files to: {0}:{1}".format(host,self.jobDirectory))
 		userName = self.serverConfFile["localhost"]["userName"]
@@ -212,7 +212,7 @@ To quit the procedure enter: exit
 			sys.exit(1)
 
 	## submitBatch Method
-	# takes input from parser and submits jobs on selected server
+	#  takes input from parser and submits jobs on selected server
 	def submitBatch(self,selectAll,host,cpus,gpus,email,priority):
 		# get current working directory
 		currentDirectory = os.getcwd()
@@ -224,14 +224,18 @@ To quit the procedure enter: exit
 		with open(os.path.join(self.clientScriptDirectory,r"utils",r"abaqusSubmit.json.tmpl"), "r") as tmp:
 			jsonTemplate = tmp.read()
 
+		# check user input
+		userInput = self.checkUserInput(host,cpus,gpus,email,priority)
+		host = userInput["host"]
+		
 		# create a dictionary with job submission information
 		jobInfo = {}
-		jobInfo["emailAddress"] = email
-		jobInfo["nCPUs"] = cpus
-		jobInfo["nGPUs"] = gpus
+		jobInfo["emailAddress"] = userInput["email"]
+		jobInfo["nCPUs"] = userInput["cpus"]
+		jobInfo["nGPUs"] = userInput["gpus"]
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
-		jobInfo["priority"] = priority
+		jobInfo["priority"] = userInput["priority"]
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -248,16 +252,6 @@ To quit the procedure enter: exit
 		jobData = parseJSONFile(self.jsonFileName)
 		assert "InternalUse" in jobData.keys(), "JSON file ({0}) is missing the InternalUse block.".format(jsonFile)
 		assert jobData["InternalUse"]["jsonFileType"] == "abaqus", "Invalid job type: {0}".format(jobData["InternalUse"]["jsonFileType"])
-
-		# check to make sure a host was specified
-		if host == None:
-			while True:
-				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
-				print("\n")
-				if host == "list":
-					self.queryAllServers()
-				elif host:
-					break
 
 		# connect to defined host
 		connectedServer = self.connectToServer(host)
@@ -286,7 +280,7 @@ To quit the procedure enter: exit
 			sys.exit(1)
 
 	## submitJob Method
-	# does same as submit batch, but for only one defined job
+	#  does same as submit batch, but for only one defined job
 	def submitJob(self,jobName,host,cpus,gpus,email,priority):
 		# get current working directory
 		currentDirectory = os.getcwd()
@@ -304,14 +298,18 @@ To quit the procedure enter: exit
 		with open(os.path.join(self.clientScriptDirectory,r"utils",r"abaqusSubmit.json.tmpl"), "r") as tmp:
 			jsonTemplate = tmp.read()
 
+		# check user input
+		userInput = self.checkUserInput(host,cpus,gpus,email,priority)
+		host = userInput["host"]
+		
 		# create a dictionary with job submission information
 		jobInfo = {}
-		jobInfo["emailAddress"] = email
-		jobInfo["nCPUs"] = cpus
-		jobInfo["nGPUs"] = gpus
+		jobInfo["emailAddress"] = userInput["email"]
+		jobInfo["nCPUs"] = userInput["cpus"]
+		jobInfo["nGPUs"] = userInput["gpus"]
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
-		jobInfo["priority"] = priority
+		jobInfo["priority"] = userInput["priority"]
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -328,16 +326,6 @@ To quit the procedure enter: exit
 		jobData = parseJSONFile(self.jsonFileName)
 		assert "InternalUse" in jobData.keys(), "JSON file ({0}) is missing the InternalUse block.".format(jsonFile)
 		assert jobData["InternalUse"]["jsonFileType"] == "abaqus", "Invalid job type: {0}".format(jobData["InternalUse"]["jsonFileType"])
-
-		# check to make sure a host was specified
-		if host == None:
-			while True:
-				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
-				print("\n")
-				if host == "list":
-					self.queryAllServers()
-				elif host:
-					break
 
 		# connect to defined host
 		connectedServer = self.connectToServer(host)
@@ -363,10 +351,57 @@ To quit the procedure enter: exit
 			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
 			print("*** ERROR: unable to submit job: {0}".format(e))
-			sys.exit(1)	
+			sys.exit(1)
+
+	## checkUserInput Method
+	#  ensures all job input info is accounted for
+	def checkUserInput(self,host,cpus,gpus,email,priority):
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers: ")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+
+		if cpus == None:
+			while True:
+				cpus = raw_input("Specify desired cpus or enter list to view active servers and their core counts or tc to see the token converter: ")
+				if cpus == "list":
+					self.queryAllServers()
+				elif cpus == "tc":
+					self.tokenConvert()
+				elif cpus:
+					break
+
+		if gpus == None:
+			while True:
+				gpus = raw_input("Specify desired gpus: ")
+				if gpus:
+					break
+
+		if email == None:
+			while True:
+				email = raw_input("Email desired upon job completion? (y/n): ")
+				if email == "y":
+					email = self.defaultEmail
+					break
+				elif email == "n":
+					email = None
+					break
+
+		if priority == None:
+			while True:
+				priority = raw_input("Specify desired priority (0=high; 2=low): ")
+				if priority >= 0 and priority <= 2:
+					break
+
+		userInputDict = {'host':host,'cpus':cpus,'gpus':gpus,'email':email,'priority':priority}
+		return userInputDict	
 
 	## getJob Method
-	# retrieves job files for specified job ID
+	#  retrieves job files for specified job ID
 	def getJob(self,jobID,host):
 		# check to make sure a host was specified
 		if host == None:
@@ -430,7 +465,7 @@ To quit the procedure enter: exit
 				sys.exit(1)
 
 	## monitor Method
-	# retrieves status files for job, displays out.log to user
+	#  retrieves status files for job, displays out.log to user
 	def monitor(self,jobID,host):
 		# check to make sure a host was specified
 		if host == None:
@@ -497,7 +532,7 @@ To quit the procedure enter: exit
 		print("\n" + tmp)
 
 	## killJob method
-	# kills job given a jobID
+	#  kills job given a jobID
 	def killJob(self,jobIDs,host):
 		# check to make sure a host was specified
 		if host == None:
@@ -530,6 +565,7 @@ To quit the procedure enter: exit
 
 		# Find all daemon servers and loop through them
 		daemons = self.findServers()
+
 		for daemon_uri, daemonName in daemons:
 			currentServer = Pyro4.Proxy(daemon_uri)
 
@@ -560,7 +596,7 @@ To quit the procedure enter: exit
 		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
 
 	## queryAllQueues Method
-	# Looks through all servers and gathers queue info (host, user, job ID, status)
+	#  Looks through all servers and gathers queue info (host, user, job ID, status)
 	def queryAllQueues(self):
 		sys.excepthook = Pyro4.util.excepthook
 
@@ -573,34 +609,35 @@ To quit the procedure enter: exit
 
 		# Find all daemon servers and loop through them
 		daemons = self.findServers()
+
 		for daemon_uri, daemonName in daemons:
 			currentServer = Pyro4.Proxy(daemon_uri)
-
 			try:
 				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
+				if jobList:
+					for job in jobList:
 
-				for job in jobList:
+						if job[4] == 0:
+							priority = "High"
+						elif job[4] == 1:
+							priority = "Med"
+						else:
+							priority = "Low"
 
-					if job[4] == 0:
-						priority = "High"
-					elif job[4] == 1:
-						priority = "Med"
-					else:
-						priority = "Low"
+						tmp = []
+						tmp.append(compName) # hostname
+						tmp.append(job[0]) # username
+						tmp.append(job[1]) # job ID
+						tmp.append(job[2]) # status
+						tmp.append(priority) # job priority
+						tmp.append(str(int(5*job[3]**0.422))) # cores being used (cpus and gpus)
 
-					tmp = []
-					tmp.append(compName) # hostname
-					tmp.append(job[0]) # username
-					tmp.append(job[1]) # job ID
-					tmp.append(job[2]) # status
-					tmp.append(priority) # job priority
-					tmp.append(str(int(5*job[3]**0.422))) # cores being used (cpus and gpus)
-
-					table.append(tmp[:])
+						table.append(tmp[:])
 
 			except Exception as e:
 				tmp = []
-				tmp.append(compName)
+				tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
+				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
@@ -612,6 +649,8 @@ To quit the procedure enter: exit
 
 		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
 
+	## tokenConvert Method
+	#  Returns table of cores to abaqus tokens
 	def tokenConvert(self):
 		cores = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
 		tokens = [int(5*core**0.422) for core in cores]
@@ -625,7 +664,7 @@ To quit the procedure enter: exit
 		print(tabulate(table,tablefmt="presto",numalign="center"))
 
 	## printAbout Method
-	# Pretty self explanatory I believe
+	#  Pretty self explanatory I believe
 	def printAbout(self):
 		print("""
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -650,9 +689,9 @@ MA  02110-1301, USA.
 =================================================================
         """.format(version))
 
-	# connectToServer Method
-	# used Pyro to connect to defined server
-	# returns Pyro proxy object
+	## connectToServer Method
+	#  used Pyro to connect to defined server
+	#  returns Pyro proxy object
 	def connectToServer(self,host):
 		sys.excepthook = Pyro4.util.excepthook
 		nsIP = self.clientConf["nameServer"]["nsIP"]
@@ -663,7 +702,7 @@ MA  02110-1301, USA.
 		return connectedServer
 
 	## findServers Method
-	# Looks through the name server to find all registered servers
+	#  Looks through the name server to find all registered servers
 	def findServers(self):
 		sys.excepthook = Pyro4.util.excepthook
 
@@ -686,19 +725,22 @@ MA  02110-1301, USA.
 		return daemons
 
 	## findFiles Method
-	# Returns all filenames from path (where) with given shell pattern (which)
+	#  Returns all filenames from path (where) with given shell pattern (which)
 	def findFiles(self,which,where="."):
 		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
 		return [name for name in os.listdir(where) if rule.match(name)]
 
 	def getLicenseInfo(self):
-		licenseText = check_output('abaqus licensing -ru', shell=True)
-		lines = []
-		for line in licenseText.split('\n'):
-			if "Users of abaqus" in line:
-				lines.append(line)
+		try:
+			licenseText = check_output('abaqus licensing -ru', shell=True)
+			lines = []
+			for line in licenseText.split('\n'):
+				if "Users of abaqus" in line:
+					lines.append(line)
 
-		print("\n",lines[1])
+			print("\n",lines[1])
+		except Exception as e:
+			print("\nUnable to get license info: {0}".format(e))
 
 	def loadClientConfFile(self):
 		with self.confFileLock:

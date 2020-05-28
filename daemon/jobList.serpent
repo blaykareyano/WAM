@@ -1,15 +1,2 @@
 # serpent utf-8 python2.6
-[
-{'solverFlags':{'gpus':0,'cpus':1,'interactive':None},
-'solver':'default',
-'jobName':'job1',
-'InternalUse':{'status':'running','jsonFileType':'abaqus','jobID':'63:job1','jobFile':'/home/analysis/Run/63/job1.inp','jsonFileVersion':'abq0.1','submissionTime':'February 24 - 09:19 AM',
-'clientName':'B.Arellano','jobNumber':'63'},
-'advanced':{'priority':2,'sendEmailTo':'None'}},
-{'solverFlags':{'gpus':0,'cpus':1,'interactive':None},
-'solver':'default',
-'jobName':'job3',
-'InternalUse':{'status':'queue','jsonFileType':'abaqus','jobID':'63:job3','jobFile':'/home/analysis/Run/63/job3.inp',
-'jsonFileVersion':'abq0.1','submissionTime':'February 24 - 09:19 AM','clientName':'B.Arellano','jobNumber':'63'},
-'advanced':{'priority':2,'sendEmailTo':'None'}},{'solverFlags':{'gpus':0,'cpus':1,'interactive':None},
-'solver':'default','jobName':'job4','InternalUse':{'status':'queue','jsonFileType':'abaqus','jobID':'63:job4','jobFile':'/home/analysis/Run/63/job4.inp','jsonFileVersion':'abq0.1','submissionTime':'February 24 - 09:19 AM','clientName':'B.Arellano','jobNumber':'63'},'advanced':{'priority':2,'sendEmailTo':'None'}},{'solverFlags':{'gpus':0,'cpus':1,'interactive':None},'solver':'default','jobName':'freevibsphere_s4','InternalUse':{'status':'queue','jsonFileType':'abaqus','jobID':'64:freevibsphere_s4','jobFile':'/home/analysis/Run/64/freevibsphere_s4.inp','jsonFileVersion':'abq0.1','submissionTime':'February 24 - 09:19 AM','clientName':'B.Arellano','jobNumber':'64'},'advanced':{'priority':0,'sendEmailTo':'None'}},{'solverFlags':{'gpus':0,'cpus':1,'interactive':None},'solver':'default','jobName':'s6','InternalUse':{'status':'queue','jsonFileType':'abaqus','jobID':'64:s6','jobFile':'/home/analysis/Run/64/s6.inp','jsonFileVersion':'abq0.1','submissionTime':'February 24 - 09:19 AM','clientName':'B.Arellano','jobNumber':'64'},'advanced':{'priority':0,'sendEmailTo':'None'}}]
+[]
