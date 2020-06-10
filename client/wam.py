@@ -11,6 +11,7 @@ import platform
 import subprocess
 import threading
 import argparse
+from argparse import RawTextHelpFormatter
 import string
 import re, fnmatch
 import json
@@ -44,29 +45,29 @@ class frontEndClient(object):
 		self.jobDirectory = None	# folder that job in run in
 
 		# Parser arguments and definitions
-		self.parser = argparse.ArgumentParser(prog="wam") # \TODO add in description and epilog
+		self.parser = argparse.ArgumentParser(prog="wam",description="Client end of the WAM ecosystem. Connects to other server daemons on the Pyro4 Network allowing a user to manage the queue and distribution of work to remote computational machines.\nhttps://github.com/blaykareyano/WAM\nBlake Arellano, 2020", formatter_class=RawTextHelpFormatter) # \TODO add in description and epilog
 
 		# Job submission arguments
-		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected", action="store_true")
-		self.parser.add_argument("-a", "--all", help="Submit all files in directory", action="store_true")
-		self.parser.add_argument("-j", "--job", help="Submit specified job", type=str, nargs='?', metavar="jobName", action="store")
-		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis", type=int, nargs='?', metavar="#", action="store")
-		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis", type=int, nargs='?', metavar="#", action="store")
-		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02)", type=str, nargs='?', metavar="hostname", action="store")
-		self.parser.add_argument("-p","--priority", help="Set the job priority. Default = 1, high priority = 0, low priority = 2", type=int, nargs='?', metavar="#", default=1, action="store")
-		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to using email from clientConf.json", action="store_const", const=self.defaultEmail)
+		self.parser.add_argument("-bat","--batch", help="Scan current directory for all valid Abaqus input files and submit all selected.\nAdditional Arguments: [-cpus [#]] [-gpus [#]] [-n [hostname]] [-p [#]] [-e]", action="store_true")
+		self.parser.add_argument("-a", "--all", help="Submit all files in directory. \nAdditional Arguments: [-cpus [#]] [-gpus [#]] [-n [hostname]] [-p [#]] [-e]", action="store_true")
+		self.parser.add_argument("-j", "--job", help="Submit specified job. \nAdditional Arguments: [-cpus [#]] [-gpus [#]] [-n [hostname]] [-p [#]] [-e]", type=str, nargs='?', metavar="jobName", action="store")
+		self.parser.add_argument("-cpus", help="Number of cores to be used in the analysis.", type=int, nargs='?', metavar="#", action="store")
+		self.parser.add_argument("-gpus", help="Number of gpus to be used in the analysis.", type=int, nargs='?', metavar="#", action="store")
+		self.parser.add_argument("-n","--host", help="Host name of the machine that will run the job (i.e. cougar, leopard, HPC-02).", type=str, nargs='?', metavar="hostname", action="store")
+		self.parser.add_argument("-p","--priority", help="Set the job priority. Default = 1, high priority = 0, low priority = 2.", type=int, nargs='?', metavar="#", default=1, action="store")
+		self.parser.add_argument("-e","--email", help="Email address for job completion email to be sent to using email from clientConf.json.", action="store_const", const=self.defaultEmail)
 
 		# Other job controls
-		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
-		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id. Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory.", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
-		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job. If killing multiple jobs, separate each job ID with a space", type=str, nargs='+', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id. Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job. If killing multiple jobs, separate each job ID with a space. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='+', metavar="job# or job#:jobName", action="store")
 		
 		# Info request arguments
-		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network", action="store_true")
-		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server", action="store_true")
-		self.parser.add_argument("-tc","--tokenConvert", help="displays cores to license tokens conversion table",action="store_true")
-		self.parser.add_argument("-about", help="See WAM version, author, and license info", action="store_true")
-		self.parser.add_argument("-ham", help="try it and find out.... Sound on recommended", action="store_true")
+		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network.", action="store_true")
+		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server.", action="store_true")
+		self.parser.add_argument("-tc","--tokenConvert", help="Displays cores to license tokens conversion table.",action="store_true")
+		self.parser.add_argument("-about", help="See WAM version, author, and license info.", action="store_true")
+		self.parser.add_argument("-ham", help="Try it and find out.... Sound on recommended.", action="store_true")
 		
 		# if no inputs given display WAM help
 		if len(sys.argv)==1: 
@@ -265,7 +266,7 @@ To quit the procedure enter: exit
 			[jobID, self.jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
 			print("Job ID: {0}".format(jobID))
 		except Exception as e:
-			print("*** ERROR: unable to initialize job: {0}".format(e))
+			print("*** ERROR: Unable to initialize job: {0}".format(e))
 			sys.exit(1)
 
 		# send job files to server
@@ -276,7 +277,7 @@ To quit the procedure enter: exit
 			connectedServer.jobDefinition(self.jobDirectory)
 			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
-			print("*** ERROR: unable to submit job: {0}".format(e))
+			print("*** ERROR: Unable to submit job: {0}".format(e))
 			sys.exit(1)
 
 	## submitJob Method
@@ -339,7 +340,7 @@ To quit the procedure enter: exit
 			[jobID, self.jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
 			print("Job ID: {0}".format(jobID))
 		except Exception as e:
-			print("*** ERROR: unable to initialize job: {0}".format(e))
+			print("*** ERROR: Unable to initialize job: {0}".format(e))
 			sys.exit(1)
 
 		# send job files to server
@@ -350,7 +351,7 @@ To quit the procedure enter: exit
 			connectedServer.jobDefinition(self.jobDirectory)
 			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
-			print("*** ERROR: unable to submit job: {0}".format(e))
+			print("*** ERROR: Unable to submit job: {0}".format(e))
 			sys.exit(1)
 
 	## checkUserInput Method
@@ -446,7 +447,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: incompatible operating system, exiting")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		else:
 			files = [jobName + fileExt[1:] for fileExt in self.defaultFileTypes]
@@ -461,7 +462,7 @@ To quit the procedure enter: exit
 			elif self.opSystem == "Linux":
 				pass
 			else:
-				print("*** ERROR: incompatible operating system, exiting")
+				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 
 	## monitor Method
@@ -604,7 +605,7 @@ To quit the procedure enter: exit
 		self.getLicenseInfo()
 
 		# Initialize the table
-		headers = ["Host Name", "Username", "Job ID", "Status", "priority", "Est. Tokens"]
+		headers = ["Host Name", "Username", "Job ID", "Status", "Priority", "Est. Tokens"]
 		table = []
 
 		# Find all daemon servers and loop through them
@@ -719,7 +720,7 @@ MA  02110-1301, USA.
 			daemonNames.append(daemonName)
 
 		if not daemon_uris:
-			print("*** ERROR: no server daemons found")
+			print("*** ERROR: No server daemons found")
 		
 		daemons = zip(daemon_uris,daemonNames)
 		return daemons
@@ -752,7 +753,7 @@ MA  02110-1301, USA.
 			connectedServer = self.connectToServer(host)
 			self.serverConfFile = connectedServer.loadServerConfFile()
 		except Exception as e:
-			print("*** ERROR: unable to get server configuration file: {0}".format(e))
+			print("*** ERROR: Unable to get server configuration file: {0}".format(e))
 			sys.exit(1)
 
 	def ham(self):

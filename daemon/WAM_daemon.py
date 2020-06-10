@@ -266,7 +266,7 @@ class serverDaemon(object):
 							data  = out.readlines()
 							logFileLines = data[-100::]
 							message = []
-							message.append("Finished running: {0}.inp \r\n\n *** The end of {0}.msg reads: \r\n\r\n".format(jobName))
+							message.append("Finished running: {0}.inp \r\n\nTo retrieve your files use the command: wam -get {1} -n {2} \r\n\n *** The end of {0}.msg reads: \r\n\r\n".format(jobName, jobID, self.hostName))
 							for line in logFileLines:
 								message.append(line.strip() + "\r\n")
 
@@ -398,7 +398,9 @@ class serverDaemon(object):
 
 		# return needed values
 		return [self.hostName, self.cpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning]
-
+	
+	## loadSerializedJobID Method
+	# loads the serialized job ID or creates one if it doesn't exist
 	def loadSerializedJobID(self):
 		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
 		if os.path.isfile(jobIDPath):
@@ -408,7 +410,9 @@ class serverDaemon(object):
 			self.jobID = 0
 			serpent.dump(self.jobID, open(jobIDPath, "wb"))
 			logging.info("created job ID serpent file: {0}".format(self.jobID))
-
+	
+	## serializeJobID Method
+	# opens the serialized job ID object to update it
 	def serializeJobID(self):
 		jobIDPath = os.path.join(self.serverScriptDirectory,"jobIDCounter.serpent")
 		with self.jobIDLock:        
@@ -418,14 +422,22 @@ class serverDaemon(object):
 			except:
 				logging.error("unable to serialize job ID counter")
 
+	## loadSerializedJobList Method
+	# loads the serialized job List and clears it on startup or creates one if it doesn't exist
 	def loadSerializedJobList(self):
 		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
 		with self.serializeJobListLock:
 			if os.path.isfile(jobListPath):
 				self.jobs = serpent.load(open(jobListPath,"rb"))
+				for job in self.jobs:
+					job["InternalUse"]["status"] = "ERROR"
+					indexToRemove = self.jobs.index(job)
+					removedItem = self.jobs.pop(indexToRemove)
 			else:
 				self.jobs = []
 
+	## serializeJobList Method
+	# opens the serialized job list object to update it
 	def serializeJobList(self):
 		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
 		with self.serializeJobListLock:
