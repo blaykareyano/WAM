@@ -423,17 +423,30 @@ class serverDaemon(object):
 				logging.error("unable to serialize job ID counter")
 
 	## loadSerializedJobList Method
-	# loads the serialized job List and clears it on startup or creates one if it doesn't exist
+	# loads the serialized job List or creates one if it doesn't exist
 	def loadSerializedJobList(self):
 		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
 		with self.serializeJobListLock:
 			if os.path.isfile(jobListPath):
 				self.jobs = serpent.load(open(jobListPath,"rb"))
+			else:
+				self.jobs = []
+	
+	## initSerializedJobList Method
+	# initializes the job list by clearing any stale jobs from list on daemon startup or creates one if it doesn't exist
+	def initSerializedJobList(self):
+		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
+		with self.jobListLock:
+			if os.path.isfile(jobListPath):
+				self.jobs = serpent.load(open(jobListPath,"rb"))
 				for job in self.jobs:
 					job["InternalUse"]["status"] = "ERROR"
+					logging.info("Job {0} removed from queue (jobList) due to daemon initialization".format(job["InternalUse"]["jobID"]))
 					indexToRemove = self.jobs.index(job)
 					removedItem = self.jobs.pop(indexToRemove)
+					self.serializeJobList()
 			else:
+				logging.info("here (else)")
 				self.jobs = []
 
 	## serializeJobList Method
@@ -511,6 +524,11 @@ class serverDaemon(object):
 def main():
 	server_daemon = serverDaemon()
 
+	# initialize job list
+	logging.info("here at start")
+	server_daemon.initSerializedJobList()
+
+	# initialize Pyro4
 	try: # use network ip addr. if connected to network
 		myIP = [(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 		daemon = Pyro4.Daemon(host=myIP, port=server_daemon.serverConf["usePortNumber"])
