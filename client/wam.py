@@ -27,7 +27,7 @@ from tabulate import tabulate
 from utils.parseJSONFile import parseJSONFile
 
 # Development Version
-version = str(0.0)
+version = str(1.0)
 
 class frontEndClient(object):
 	def __init__(self, userArgs):

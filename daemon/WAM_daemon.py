@@ -410,7 +410,7 @@ class serverDaemon(object):
 		for job in self.jobHist:
 			tmp = []
 			tmp.append(job["InternalUse"]["clientName"])
-			tmp.append(job["InternalUse"]["jobNumber"])
+			tmp.append(job["InternalUse"]["job"])
 			tmp.append(job["jobName"])
 			tmp.append(job["InternalUse"]["status"])
 			tmp.append(job["InternalUse"]["submissionTime"])
