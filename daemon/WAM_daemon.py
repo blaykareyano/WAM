@@ -525,7 +525,7 @@ def main():
 	server_daemon = serverDaemon()
 
 	# initialize job list
-	logging.info("here at start")
+	logging.info("Initializing Job List")
 	server_daemon.initSerializedJobList()
 
 	# initialize Pyro4
