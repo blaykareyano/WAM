@@ -48,9 +48,13 @@ class serverDaemon(object):
 		# lock and load serialized objects
 		self.jobIDLock = threading.Lock()
 		self.loadSerializedJobID()
-		self.serializeJobListLock = threading.Lock()
-		self.loadSerializedJobList()
 		self.jobListLock = threading.Lock()
+		self.serializedJobListLock = threading.Lock()
+		self.loadSerializedJobList()
+		self.serializedJobHistLock = threading.Lock()
+		self.loadSerializedJobHist()
+
+		# set up cpu lock for running jobs
 		self.CPULock = threading.Lock()
 
 		# start logging
@@ -132,7 +136,7 @@ class serverDaemon(object):
 				self.jobs.sort(key=lambda i: (i["InternalUse"]["status"]!="running",i["advanced"]["priority"],i["InternalUse"]["submissionTime"]))
 			except Exception as e:
 				logging.error("unable to prioritize jobs list: {0}".format(e))
-
+			
 			self.serializeJobList()
 
 		threading.Thread(target=self.__runJob).start()
@@ -311,6 +315,10 @@ class serverDaemon(object):
 			with self.jobListLock:
 				job["InternalUse"]["status"] = "complete"
 
+				# add job to job history
+				self.jobHist.insert(0,job)
+				self.serializeJobHist()
+
 				# remove job from jobs list
 				if job in self.jobs:
 					indexToRemove = self.jobs.index(job)
@@ -344,6 +352,8 @@ class serverDaemon(object):
 
 				if jobRef == jobID:
 					job["InternalUse"]["status"] = "killed by %s"%(username)
+					self.jobHist.insert(0,job)
+					self.serializeJobHist()
 					indexToRemove = self.jobs.index(job)
 					removedItem = self.jobs.pop(indexToRemove)
 					self.serializeJobList()
@@ -396,8 +406,19 @@ class serverDaemon(object):
 
 			jobList.append(tmp[:])
 
+		jobHistory = []
+		for job in self.jobHist:
+			tmp = []
+			tmp.append(job["InternalUse"]["clientName"])
+			tmp.append(job["InternalUse"]["jobNumber"])
+			tmp.append(job["jobName"])
+			tmp.append(job["InternalUse"]["status"])
+			tmp.append(job["InternalUse"]["submissionTime"])
+
+			jobHistory.append(tmp[:])
+
 		# return needed values
-		return [self.hostName, self.cpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning]
+		return [self.hostName, self.cpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning, jobHistory]
 	
 	## loadSerializedJobID Method
 	# loads the serialized job ID or creates one if it doesn't exist
@@ -426,11 +447,13 @@ class serverDaemon(object):
 	# loads the serialized job List or creates one if it doesn't exist
 	def loadSerializedJobList(self):
 		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
-		with self.serializeJobListLock:
+		with self.serializedJobListLock:
 			if os.path.isfile(jobListPath):
 				self.jobs = serpent.load(open(jobListPath,"rb"))
 			else:
 				self.jobs = []
+				serpent.dump(self.jobs, open(jobListPath, "wb"))
+				logging.info("created job list serpent file")
 	
 	## initSerializedJobList Method
 	# initializes the job list by clearing any stale jobs from list on daemon startup or creates one if it doesn't exist
@@ -442,22 +465,54 @@ class serverDaemon(object):
 				for job in self.jobs:
 					job["InternalUse"]["status"] = "ERROR"
 					logging.info("Job {0} removed from queue (jobList) due to daemon initialization".format(job["InternalUse"]["jobID"]))
+					self.jobHist.insert(0,job)
+					self.serializeJobHist()
 					indexToRemove = self.jobs.index(job)
 					removedItem = self.jobs.pop(indexToRemove)
 					self.serializeJobList()
 			else:
 				logging.info("here (else)")
 				self.jobs = []
+				serpent.dump(self.jobs, open(jobListPath, "wb"))
+				logging.info("created job list serpent file")
 
-	## serializeJobList Method
-	# opens the serialized job list object to update it
+	## serializeJobHist Method
+	# opens the serialized job history list object to update it
 	def serializeJobList(self):
 		jobListPath = os.path.join(self.serverScriptDirectory,"jobList.serpent")
-		with self.serializeJobListLock:
+		with self.serializedJobListLock:
 			try:
 				serpent.dump(self.jobs, open(jobListPath,"wb"))
 			except:
 				logging.error("unable to serializeJobList")
+
+	## loadSerializedJobHist Method
+	# loads the serialized job history list or creates one if it doesn't exist
+	def loadSerializedJobHist(self):
+		jobHistPath = os.path.join(self.serverScriptDirectory,"jobHist.serpent")
+		logging.info("here: loadSerializedJobHist")
+		with self.serializedJobHistLock:
+			logging.info("here: with")
+			if os.path.isfile(jobHistPath):
+				logging.info("here: if")
+				self.jobHist = serpent.load(open(jobHistPath,"rb"))
+			else:
+				logging.info("here: else")
+				self.jobHist = []
+				serpent.dump(self.jobHist, open(jobHistPath, "wb"))
+				logging.info("created job history serpent file")
+
+	## serializeJobHist Method
+	# opens the serialized job list object to update it
+	def serializeJobHist(self):
+		jobHistPath = os.path.join(self.serverScriptDirectory,"jobHist.serpent")
+		with self.serializedJobHistLock:
+			if len(self.jobHist) > 20:
+				self.jobHist.pop()
+			try:
+				serpent.dump(self.jobHist, open(jobHistPath,"wb"))
+			except:
+				logging.error("unable to serializeJobHist")
 
 	## loadServerConfFile Method
 	# returns configuration json for client
@@ -524,7 +579,7 @@ class serverDaemon(object):
 def main():
 	server_daemon = serverDaemon()
 
-	# initialize job list
+	# initialize job list and job history list
 	logging.info("Initializing Job List")
 	server_daemon.initSerializedJobList()
 

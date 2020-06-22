@@ -64,7 +64,8 @@ class frontEndClient(object):
 		
 		# Info request arguments
 		self.parser.add_argument("-cstat","--computeStats", help="Check basic info (IP, cores, available memory, number of jobs in queue) of all machines on the network.", action="store_true")
-		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server.", action="store_true")
+		self.parser.add_argument("-qstat","--queueStats", help="Check job queues on all machines connected to the name server. \nAdditional Arguments: [-n [hostname]]", action="store_true")
+		self.parser.add_argument("-hist","--history", help="Check job history on all machines connected to the name server. \nAdditional Optional Arguments: [-n [hostname]]", action="store_true")
 		self.parser.add_argument("-tc","--tokenConvert", help="Displays cores to license tokens conversion table.",action="store_true")
 		self.parser.add_argument("-about", help="See WAM version, author, and license info.", action="store_true")
 		self.parser.add_argument("-ham", help="Try it and find out.... Sound on recommended.", action="store_true")
@@ -104,6 +105,10 @@ class frontEndClient(object):
 
 		if userArgs.queueStats:
 			self.queryAllQueues()
+			sys.exit(0)
+
+		if userArgs.history:
+			self.pullJobHistory(userArgs.host)
 			sys.exit(0)
 
 		if userArgs.tokenConvert:
@@ -571,7 +576,7 @@ To quit the procedure enter: exit
 			currentServer = Pyro4.Proxy(daemon_uri)
 
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
 				
 				tmp = []
 				tmp.append(compName)
@@ -614,7 +619,7 @@ To quit the procedure enter: exit
 		for daemon_uri, daemonName in daemons:
 			currentServer = Pyro4.Proxy(daemon_uri)
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning] = currentServer.getComputerInfo()
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
 				if jobList:
 					for job in jobList:
 
@@ -639,6 +644,73 @@ To quit the procedure enter: exit
 				tmp = []
 				tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
 				tmp.append("ERROR")
+				tmp.append("ERROR")
+				tmp.append("ERROR")
+				tmp.append("ERROR")
+				tmp.append("ERROR")
+
+				table.append(tmp[:])
+				print("*** ERROR: {0}".format(e))
+				pass
+
+		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
+
+	def pullJobHistory(self,host):
+		# Initialize the table
+		headers = ["Host Name", "Username", "Job Number", "Job Name", "Status", "Submission Time"]
+		table = []
+
+		if host == None:
+			# Find all daemon servers and loop through them
+			daemons = self.findServers()
+
+			for daemon_uri, daemonName in daemons:
+				currentServer = Pyro4.Proxy(daemon_uri)
+				try:
+					[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
+					if jobHist:
+						for job in jobHist:
+							tmp = []
+							tmp.append(compName) # hostname
+							tmp.append(job[0]) # username
+							tmp.append(job[1]) # job number
+							tmp.append(job[2]) # job name
+							tmp.append(job[3]) # status
+							tmp.append(job[4]) # submission time
+
+							table.append(tmp[:])
+
+				except Exception as e:
+					tmp = []
+					tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
+					tmp.append("ERROR")
+					tmp.append("ERROR")
+					tmp.append("ERROR")
+					tmp.append("ERROR")
+
+					table.append(tmp[:])
+					print("*** ERROR: {0}".format(e))
+					pass
+
+		else:
+			currentServer = self.connectToServer(host)
+			try:
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
+				if jobHist:
+					for job in jobHist:
+						tmp = []
+						tmp.append(compName) # hostname
+						tmp.append(job[0]) # username
+						tmp.append(job[1]) # job number
+						tmp.append(job[2]) # job name
+						tmp.append(job[3]) # status
+						tmp.append(job[4]) # submission time
+
+						table.append(tmp[:])
+
+			except Exception as e:
+				tmp = []
+				tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
