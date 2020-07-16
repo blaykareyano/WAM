@@ -251,8 +251,13 @@ class serverDaemon(object):
 						message = None
 
 						# get the msg file contents:
-						with open("{0}.msg".format(jobName),"r") as out:
+						if os.path.exists(jobName+".msg") == False:
+							out = open("{0}.msg".format(jobName),"w")
+							out.write("*** no message file exists for job {0} ***\r\n\n".format(jobName))
+							out.write("*** this is probably due to an input file error ***\r\n\n".format(jobName))
+							out.close()
 
+						with open("{0}.msg".format(jobName),"r") as out:
 							# get server data:
 							SMTPServer = self.serverConf["emailServer"]["SMTPServer"]
 							SMTPPort   = self.serverConf["emailServer"]["SMTPPort"]
@@ -410,7 +415,7 @@ class serverDaemon(object):
 		for job in self.jobHist:
 			tmp = []
 			tmp.append(job["InternalUse"]["clientName"])
-			tmp.append(job["InternalUse"]["job"])
+			tmp.append(job["InternalUse"]["jobID"])
 			tmp.append(job["jobName"])
 			tmp.append(job["InternalUse"]["status"])
 			tmp.append(job["InternalUse"]["submissionTime"])
