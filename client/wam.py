@@ -576,15 +576,13 @@ To quit the procedure enter: exit
 			currentServer = Pyro4.Proxy(daemon_uri)
 
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
-				
+				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()	
 				tmp = []
 				tmp.append(compName)
 				tmp.append(IP)
 				tmp.append(cpus)
 				tmp.append(str(mem) + " Gb")
 				tmp.append("Running: {0}, Queue: {1}".format(jobsRunning,jobsQueue))
-
 				table.append(tmp[:])
 
 			except Exception as e:
@@ -594,7 +592,6 @@ To quit the procedure enter: exit
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
-
 				table.append(tmp[:])
 				print("*** ERROR: {0}".format(e))
 				pass
@@ -637,7 +634,6 @@ To quit the procedure enter: exit
 						tmp.append(job[2]) # status
 						tmp.append(priority) # job priority
 						tmp.append(str(int(5*job[3]**0.422))) # cores being used (cpus and gpus)
-
 						table.append(tmp[:])
 
 			except Exception as e:
@@ -648,7 +644,6 @@ To quit the procedure enter: exit
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
-
 				table.append(tmp[:])
 				print("*** ERROR: {0}".format(e))
 				pass
@@ -677,7 +672,6 @@ To quit the procedure enter: exit
 							tmp.append(job[2]) # job name
 							tmp.append(job[3]) # status
 							tmp.append(job[4]) # submission time
-
 							table.append(tmp[:])
 
 				except Exception as e:
@@ -687,7 +681,6 @@ To quit the procedure enter: exit
 					tmp.append("ERROR")
 					tmp.append("ERROR")
 					tmp.append("ERROR")
-
 					table.append(tmp[:])
 					print("*** ERROR: {0}".format(e))
 					pass
@@ -705,7 +698,6 @@ To quit the procedure enter: exit
 						tmp.append(job[2]) # job name
 						tmp.append(job[3]) # status
 						tmp.append(job[4]) # submission time
-
 						table.append(tmp[:])
 
 			except Exception as e:
@@ -715,7 +707,6 @@ To quit the procedure enter: exit
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
-
 				table.append(tmp[:])
 				print("*** ERROR: {0}".format(e))
 				pass
