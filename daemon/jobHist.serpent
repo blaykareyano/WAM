@@ -1,0 +1,2 @@
+# serpent utf-8 python2.6
+[{'InternalUse':{'jsonFileType':'abaqus','jsonFileVersion':'abq0.4','clientVersion':0.4,'solver':'default'},'advanced':{'sendEmailTo':'e.jensen@questintegrity.com'},'solverFlags':{'gpus':0,'cpus':8,'interactive':None},'jobData':{'status':'MACHINE ERROR','jobFile':'/home/analysis/Run/420/ODCrackOnly_StandardGeom_EP.inp','jobDirectory':'/home/analysis/Run/420','jobID':'420:ODCrackOnly_StandardGeom_EP','priority':1,'submissionTime':'July 27 - 16:38','jobName':'ODCrackOnly_StandardGeom_EP','clientName':'E.Jensen','jobNumber':'420'}}]

@@ -27,7 +27,7 @@ from tabulate import tabulate
 from utils.parseJSONFile import parseJSONFile
 
 # Development Version
-version = str(1.0)
+version = 0.4
 
 class frontEndClient(object):
 	def __init__(self, userArgs):
@@ -242,6 +242,7 @@ To quit the procedure enter: exit
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
 		jobInfo["priority"] = userInput["priority"]
+		jobInfo["version"] = version
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -316,6 +317,7 @@ To quit the procedure enter: exit
 		jobInfo["jobFiles"] = json.dumps(inputFiles)
 		jobInfo["clientUserName"] = self.userName
 		jobInfo["priority"] = userInput["priority"]
+		jobInfo["version"] = version
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -751,7 +753,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 MA  02110-1301, USA.
 =================================================================
-        """.format(version))
+        """.format(str(version)))
 
 	## connectToServer Method
 	#  used Pyro to connect to defined server

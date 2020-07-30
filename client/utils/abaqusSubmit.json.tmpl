@@ -1,25 +1,25 @@
-
 {
-    // array containing the abaqus job names for the 
     "jobFiles" : $jobFiles,   
 
     "solverFlags" : { 
-        "cpus" : $nCPUs, // number of CPUs used to run the simulations
-        "gpus" : $nGPUs, // number of GPUs used to run the simulations
-        "interactive": null // interactive mode. This flag takes no arguments, so we set it to null  
+        "cpus" : $nCPUs,
+        "gpus" : $nGPUs,
+        "interactive": null 
      },
 
-    "solver" : "default", 
-
     "advanced" : {
-        "sendEmailTo" :  "$emailAddress",
-        "priority" : $priority // job priority; default = 1, high = 0, low = 2
+        "sendEmailTo" :  "$emailAddress"
     }, 
 
-    "InternalUse" : { // internal use variables, keep as is...
-        "jsonFileType": "abaqus",       // internal use - don't touch
-        "jsonFileVersion" : "abq0.1",    // internal use - don't touch
-        "clientName" : "$clientUserName" // internal use - don't touch
-    }
+    "jobData" : {
+        "priority" : $priority,
+        "clientName" : "$clientUserName" 
+    },
 
+    "InternalUse" : {
+        "jsonFileType": "abaqus",
+        "jsonFileVersion" : 0.4,
+        "clientVersion" : $version,
+        "solver" : "default" 
+    }
 }

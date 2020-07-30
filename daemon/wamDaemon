@@ -1,26 +1,9 @@
 #!/bin/bash
+#
 # chkconfig: 345 99 02
 # description: WAM Daemon Server
-
-# -------------------------------------------------------------------------
-#    <Pyro4 NameServer Script>
-#    Copyright (C) <2011>  <Pierre PACORY> - ppacory@...<mailto:ppacory@...>
-
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>;.
-# -------------------------------------------------------------------------
-
-
+# processname: wamDaemon
+#
 
 MESSAGEDIR=/opt/WAM/daemon/logs/
 MESSAGELOG=/opt/WAM/daemon/logs/server.log
@@ -42,11 +25,11 @@ touch $PID
 
 case "$1" in
   start)
-
     # create the log directory if not exist
     [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
 
     echo "Starting WAM Daemon"
+    
     # test if not already running
     if [ ! -f "/proc/$(cat $PID)/exe" ]; then
       python /opt/WAM/daemon/WAM_daemon.py >/dev/null 2>&1 &

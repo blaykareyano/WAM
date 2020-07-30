@@ -31,8 +31,8 @@ from psutil import virtual_memory # https://pypi.org/project/psutil/
 from utils.parseJSONFile import parseJSONFile
 from utils.emailMisc import sendEmailMsg
 
-# Pyro4 configuration options
-# Pyro4.config.COMMTIMEOUT = 300.0 # timeout in seconds
+# Development Version
+version = 0.4
 
 # Daemon class visible to Pyro client
 @Pyro4.expose
@@ -101,24 +101,33 @@ class serverDaemon(object):
 		jsonFile = os.path.join(jobDirectory,"abaqusSubmit.json")
 		jobData = parseJSONFile(jsonFile)
 
+		if jobData["InternalUse"]["clientVersion"] != version:
+			e = "client {0} using wrong client version, current daemon version = {1}".format(job["jobData"]["clientName"],version)
+			logging.error(e)
+			return(e)
+		elif jobData["InternalUse"]["jsonFileVersion"] != version:
+			e = "client {0} using wrong JSON version, current daemon version = {1}".format(job["jobData"]["clientName"],version)
+			logging.error(e)
+			return(e)
+
 		logging.info("job {0} submission JSON loaded".format(self.jobID))
 
-		subTime = datetime.datetime.now().strftime("%B %d - %H:%M %p")
-		jobData["InternalUse"]["submissionTime"] = subTime
+		subTime = datetime.datetime.now().strftime("%B %d - %H:%M")
+		jobData["jobData"]["submissionTime"] = subTime
 
 		# Separate all job files and create indivual dictionaries for each
 		for i,jobFile in enumerate(jobData["jobFiles"]):
 			singleJob = copy.deepcopy(jobData)
 			singleJob.pop("jobFiles",None)
-			singleJob["jobName"] = os.path.splitext(os.path.basename(jobFile))[0]
-			singleJob["InternalUse"]["jobNumber"] = str(self.jobID)
-			singleJob["InternalUse"]["jobID"] = str(self.jobID)+":"+singleJob["jobName"]
-			singleJob["InternalUse"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobName"]+".inp")
-			singleJob["InternalUse"]["jobDirectory"] = jobDirectory
+			singleJob["jobData"]["jobName"] = os.path.splitext(os.path.basename(jobFile))[0]
+			singleJob["jobData"]["jobNumber"] = str(self.jobID)
+			singleJob["jobData"]["jobID"] = str(self.jobID)+":"+singleJob["jobData"]["jobName"]
+			singleJob["jobData"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobData"]["jobName"]+".inp")
+			singleJob["jobData"]["jobDirectory"] = jobDirectory
 
-			logging.info("created job {0}".format(singleJob["InternalUse"]["jobID"]))
+			logging.info("created job {0}".format(singleJob["jobData"]["jobID"]))
 
-			self.addJobToQueue(singleJob, jobDirectory)	
+			self.addJobToQueue(singleJob, jobDirectory)
 
 	## addJobToQueue Method
 	# adds jobs from job list into queue
@@ -126,14 +135,14 @@ class serverDaemon(object):
 	def addJobToQueue(self,job,jobDirectory):
 		with self.jobListLock:
 
-			job["InternalUse"]["status"] = "queue"
-			logging.info("job {0} added to queue".format(job["InternalUse"]["jobID"]))
+			job["jobData"]["status"] = "queue"
+			logging.info("job {0} added to queue".format(job["jobData"]["jobID"]))
 
 			self.jobs.append(job)
 
 			# sort the job queue by priority
 			try:
-				self.jobs.sort(key=lambda i: (i["InternalUse"]["status"]!="running",i["advanced"]["priority"],i["InternalUse"]["submissionTime"]))
+				self.jobs.sort(key=lambda i: (i["jobData"]["status"]!="running",i["jobData"]["priority"],i["jobData"]["submissionTime"]))
 			except Exception as e:
 				logging.error("unable to prioritize jobs list: {0}".format(e))
 			
@@ -147,16 +156,16 @@ class serverDaemon(object):
 		with self.CPULock:
 			
 			job = self.jobs[0]
-			jobDirectory = job["InternalUse"]["jobDirectory"]
+			jobDirectory = job["jobData"]["jobDirectory"]
 
 			# check if job has been killed
-			if "killed" in job["InternalUse"]["status"]:
+			if "killed" in job["jobData"]["status"]:
 				return
 
 			# preliminary job submission stuff	
 			self.start = datetime.datetime.now() # start a clock
 			with self.jobListLock:
-				job["InternalUse"]["status"] = "running"
+				job["jobData"]["status"] = "running"
 				self.serializeJobList()
 			os.chdir(jobDirectory)
 			cwd = jobDirectory
@@ -166,15 +175,15 @@ class serverDaemon(object):
 			stdOutFile = os.path.join(jobDirectory, "out.log")
 
 			# gather job information
-			clientName = job["InternalUse"]["clientName"]
+			clientName = job["jobData"]["clientName"]
 			cpus = job["solverFlags"]["cpus"]
 			gpus = job["solverFlags"]["gpus"]
-			jobName = job["jobName"]
-			jobID = job["InternalUse"]["jobID"]
+			jobName = job["jobData"]["jobName"]
+			jobID = job["jobData"]["jobID"]
 			solver = job["InternalUse"]["jsonFileType"]
 
 			self.currentJobID = jobID
-			self.currentJobNumber = job["InternalUse"]["jobNumber"]
+			self.currentJobNumber = job["jobData"]["jobNumber"]
 
 			# compile command line options
 			cmd = []
@@ -237,7 +246,7 @@ class serverDaemon(object):
 					# convert unix2dos
 					fileTypes = [jobName+".fil",jobName+".sta",jobName+".msg",jobName+".dat"]
 					for fileType in fileTypes:
-						cmd = ["unix2dos",fileType]
+						cmd = ["unix2dos","-f","-o " + fileType]
 						try:
 							self.currentSubProcess = subprocess.Popen(cmd,cwd=cwd)
 							self.currentSubProcess.wait()
@@ -317,8 +326,12 @@ class serverDaemon(object):
 			self.currentJobNumber = None
 			self.currentSubProcess = None
 
+			# check if job has been killed
+			if "killed" in job["jobData"]["status"]:
+				return
+
 			with self.jobListLock:
-				job["InternalUse"]["status"] = "complete"
+				job["jobData"]["status"] = "complete"
 
 				# add job to job history
 				self.jobHist.insert(0,job)
@@ -349,14 +362,14 @@ class serverDaemon(object):
 		with self.jobListLock:
 			for job in self.jobs[::-1]: # iterate backwards so we dont skip jobs
 				if jobName == None:
-					jobRef = job["InternalUse"]["jobNumber"]
+					jobRef = job["jobData"]["jobNumber"]
 					curJobRef = self.currentJobNumber
 				else:
-					jobRef = job["InternalUse"]["jobID"]
+					jobRef = job["jobData"]["jobID"]
 					curJobRef = self.currentJobID
 
 				if jobRef == jobID:
-					job["InternalUse"]["status"] = "killed by %s"%(username)
+					job["jobData"]["status"] = "killed by %s"%(username)
 					self.jobHist.insert(0,job)
 					self.serializeJobHist()
 					indexToRemove = self.jobs.index(job)
@@ -368,8 +381,8 @@ class serverDaemon(object):
 						if self.currentSubProcess is not None:
 							os.killpg(self.currentSubProcess.pid, signal.SIGTERM)
 
-					msg = "Job {0} killed by {1}".format(job["InternalUse"]["jobID"],username)
-					logging.info("job {0} killed by {1}".format(job["InternalUse"]["jobID"],username))
+					msg = "Job {0} killed by {1}".format(job["jobData"]["jobID"],username)
+					logging.info("job {0} killed by {1}".format(job["jobData"]["jobID"],username))
 
 					msgs.append(msg)
 
@@ -393,32 +406,32 @@ class serverDaemon(object):
 		jobList = []
 		for job in self.jobs:
 			tmp = []
-			tmp.append(job["InternalUse"]["clientName"])
-			tmp.append(job["InternalUse"]["jobID"])
-			if "running" in job["InternalUse"]["status"]:
+			tmp.append(job["jobData"]["clientName"])
+			tmp.append(job["jobData"]["jobID"])
+			if "running" in job["jobData"]["status"]:
 				now = datetime.datetime.now()
 				deltaTime = now - self.start
 				hours, remainder = divmod(deltaTime.seconds, 3600)
 				minutes, seconds = divmod(remainder, 60)
 				deltaTime = ("({0:d}:{1:02d}:{2:02d})".format(hours,minutes,seconds))
-				tmp.append("{0} {1}".format(job["InternalUse"]["status"],deltaTime))
+				tmp.append("{0} {1}".format(job["jobData"]["status"],deltaTime))
 				jobsRunning = jobsRunning + 1
 			else:
-				tmp.append(job["InternalUse"]["status"])
+				tmp.append(job["jobData"]["status"])
 				jobsQueue = jobsQueue + 1
 			tmp.append(job["solverFlags"]["cpus"]+job["solverFlags"]["gpus"])
-			tmp.append(job["advanced"]["priority"])
+			tmp.append(job["jobData"]["priority"])
 
 			jobList.append(tmp[:])
 
 		jobHistory = []
 		for job in self.jobHist:
 			tmp = []
-			tmp.append(job["InternalUse"]["clientName"])
-			tmp.append(job["InternalUse"]["jobNumber"])
-			tmp.append(job["jobName"])
-			tmp.append(job["InternalUse"]["status"])
-			tmp.append(job["InternalUse"]["submissionTime"])
+			tmp.append(job["jobData"]["clientName"])
+			tmp.append(job["jobData"]["jobNumber"])
+			tmp.append(job["jobData"]["jobName"])
+			tmp.append(job["jobData"]["status"])
+			tmp.append(job["jobData"]["submissionTime"])
 
 			jobHistory.append(tmp[:])
 
@@ -468,15 +481,14 @@ class serverDaemon(object):
 			if os.path.isfile(jobListPath):
 				self.jobs = serpent.load(open(jobListPath,"rb"))
 				for job in self.jobs:
-					job["InternalUse"]["status"] = "ERROR"
-					logging.info("Job {0} removed from queue (jobList) due to daemon initialization".format(job["InternalUse"]["jobID"]))
+					job["jobData"]["status"] = "MACHINE ERROR"
+					logging.info("Job {0} removed from queue (jobList) due to daemon initialization".format(job["jobData"]["jobID"]))
 					self.jobHist.insert(0,job)
 					self.serializeJobHist()
 					indexToRemove = self.jobs.index(job)
 					removedItem = self.jobs.pop(indexToRemove)
 					self.serializeJobList()
 			else:
-				logging.info("here (else)")
 				self.jobs = []
 				serpent.dump(self.jobs, open(jobListPath, "wb"))
 				logging.info("created job list serpent file")
@@ -495,14 +507,10 @@ class serverDaemon(object):
 	# loads the serialized job history list or creates one if it doesn't exist
 	def loadSerializedJobHist(self):
 		jobHistPath = os.path.join(self.serverScriptDirectory,"jobHist.serpent")
-		logging.info("here: loadSerializedJobHist")
 		with self.serializedJobHistLock:
-			logging.info("here: with")
 			if os.path.isfile(jobHistPath):
-				logging.info("here: if")
 				self.jobHist = serpent.load(open(jobHistPath,"rb"))
 			else:
-				logging.info("here: else")
 				self.jobHist = []
 				serpent.dump(self.jobHist, open(jobHistPath, "wb"))
 				logging.info("created job history serpent file")
@@ -512,7 +520,7 @@ class serverDaemon(object):
 	def serializeJobHist(self):
 		jobHistPath = os.path.join(self.serverScriptDirectory,"jobHist.serpent")
 		with self.serializedJobHistLock:
-			if len(self.jobHist) > 20:
+			if len(self.jobHist) > 30:
 				self.jobHist.pop()
 			try:
 				serpent.dump(self.jobHist, open(jobHistPath,"wb"))

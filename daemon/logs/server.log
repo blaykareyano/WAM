@@ -285,3 +285,37 @@
 02/11/2020 09:28:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/11/2020 09:33:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
 02/11/2020 09:38:19 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 11:46:58 AM - INFO: WAM daemon server script initalized
+07/30/2020 11:46:58 AM - INFO: Initializing Job List
+07/30/2020 11:52:45 AM - INFO: WAM daemon server script initalized
+07/30/2020 11:52:45 AM - INFO: Initializing Job List
+07/30/2020 11:52:45 AM - INFO: Job 420:ODCrackOnly_StandardGeom_EP removed from queue (jobList) due to daemon initialization
+07/30/2020 11:52:45 AM - INFO: starting daemon on 10.10.250.194:9998
+07/30/2020 11:52:45 AM - INFO: daemon started successfully
+07/30/2020 11:52:45 AM - INFO: registered with name server: uri = PYRO:WAM.DJRRTT2@10.10.250.194:9998
+07/30/2020 11:52:45 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 11:54:14 AM - INFO: HPC information requested from client
+07/30/2020 11:57:45 AM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:02:45 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:07:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:12:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:17:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:22:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:24:06 PM - INFO: HPC information requested from client
+07/30/2020 12:26:09 PM - INFO: HPC information requested from client
+07/30/2020 12:27:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:30:29 PM - INFO: HPC information requested from client
+07/30/2020 12:31:41 PM - INFO: HPC information requested from client
+07/30/2020 12:32:27 PM - INFO: HPC information requested from client
+07/30/2020 12:32:46 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:37:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:42:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:47:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:52:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 12:57:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 01:02:47 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 01:07:48 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 01:12:48 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 01:17:48 PM - INFO: shook hands with naming server at 10.200.209.12:9999
+07/30/2020 01:18:04 PM - INFO: HPC information requested from client
+07/30/2020 01:18:55 PM - INFO: HPC information requested from client
