@@ -663,7 +663,7 @@ To quit the procedure enter: exit
 		self.getLicenseInfo()
 
 		# Initialize the table
-		headers = ["Host Name", "IP Address", "Cores", "Total Memory", "Job Queue Length"]
+		headers = ["Host Name", "IP Address", "Cores", "GPUS", "Total Memory", "Job Queue Length"]
 		table = []
 
 		# Find all daemon servers and loop through them
@@ -673,11 +673,12 @@ To quit the procedure enter: exit
 			currentServer = Pyro4.Proxy(daemon_uri)
 
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()	
+				[compName, cpus, gpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()	
 				tmp = []
 				tmp.append(compName)
 				tmp.append(IP)
 				tmp.append(cpus)
+				tmp.append(gpus)
 				tmp.append(str(mem) + " Gb")
 				tmp.append("Running: {0}, Queue: {1}".format(jobsRunning,jobsQueue))
 				table.append(tmp[:])
@@ -713,7 +714,7 @@ To quit the procedure enter: exit
 		for daemon_uri, daemonName in daemons:
 			currentServer = Pyro4.Proxy(daemon_uri)
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
+				[compName, cpus, gpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
 				if jobList:
 					for job in jobList:
 

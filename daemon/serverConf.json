@@ -2,6 +2,7 @@
     
     "fileVersion" : "0.1",
     "usePortNumber" : 9998,                 // port number that the WAM daemon will listen to
+    "gpus" : 0,                             // number of usable GPUS
 
     "localhost" : {
         "logFileName"   : "server.log",      // log file name

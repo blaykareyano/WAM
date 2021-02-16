@@ -64,6 +64,7 @@ class serverDaemon(object):
 		self.hostName = socket.gethostname()
 		self.IPaddr = socket.gethostbyname(self.hostName)
 		self.cpus = multiprocessing.cpu_count()
+		self.gpus = self.serverConf["gpus"]
 		self.mem = virtual_memory() # in bytes; options include: total & available
 		self.opSystem = platform.system()
 
@@ -445,7 +446,7 @@ class serverDaemon(object):
 			jobHistory.append(tmp[:])
 
 		# return needed values
-		return [self.hostName, self.cpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning, jobHistory]
+		return [self.hostName, self.cpus, self.gpus, totMem, self.IPaddr, jobList, jobsQueue, jobsRunning, jobHistory]
 	
 	## loadSerializedJobID Method
 	# loads the serialized job ID or creates one if it doesn't exist
