@@ -762,7 +762,7 @@ To quit the procedure enter: exit
 			for daemon_uri, daemonName in daemons:
 				currentServer = Pyro4.Proxy(daemon_uri)
 				try:
-					[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
+					[compName, cpus, gpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
 					if jobHist:
 						for job in jobHist:
 							tmp = []
@@ -788,7 +788,7 @@ To quit the procedure enter: exit
 		else:
 			currentServer = self.connectToServer(host)
 			try:
-				[compName, cpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
+				[compName, cpus, gpus, mem, IP, jobList, jobsQueue, jobsRunning, jobHist] = currentServer.getComputerInfo()
 				if jobHist:
 					for job in jobHist:
 						tmp = []
@@ -802,7 +802,7 @@ To quit the procedure enter: exit
 
 			except Exception as e:
 				tmp = []
-				tmp.append(daemonName.lstrip("WAM.").rstrip(".daemon"))
+				tmp.append(compName)
 				tmp.append("ERROR")
 				tmp.append("ERROR")
 				tmp.append("ERROR")
