@@ -11,8 +11,8 @@
     "defaults" : {
     	"email" : "b.arellano@questintegrity.com", // default email for -e, --email command
     	//"fileTypes" : ["*.fil","*.odb", "*.dat", "*.msg", "*.sta", "*.prt", "*.sim","*.log"], // default file types to retrieve when running -get command (*.log must be in this list)
-        "fileTypes" : ["*.odb","*.log"],
-    	"monitorFileTypes" : ["*.sta","*.msg", "*.dat", "*.log"] // default files types to pull for a -m, --monitor command (*.log must be in this list)
+        "fileTypes" : ["*.odb","*.dat","*.log"],
+    	"monitorFileTypes" : ["*.sta","*.msg","*.dat"] // default files types to pull for a -m, --monitor command (*.log must be in this list)
     }
 
 }

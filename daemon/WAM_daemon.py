@@ -32,7 +32,7 @@ from utils.parseJSONFile import parseJSONFile
 from utils.emailMisc import sendEmailMsg
 
 # Development Version
-version = 0.4
+version = 0.5
 
 # Daemon class visible to Pyro client
 @Pyro4.expose
@@ -101,14 +101,16 @@ class serverDaemon(object):
 		jsonFile = os.path.join(jobDirectory,"abaqusSubmit.json")
 		jobData = parseJSONFile(jsonFile)
 
+		# send an error if the client has the wrong version
+		e = []
 		if jobData["InternalUse"]["clientVersion"] != version:
-			e = "client {0} using wrong client version, current daemon version = {1}".format(job["jobData"]["clientName"],version)
-			logging.error(e)
-			return(e)
-		elif jobData["InternalUse"]["jsonFileVersion"] != version:
-			e = "client {0} using wrong JSON version, current daemon version = {1}".format(job["jobData"]["clientName"],version)
-			logging.error(e)
-			return(e)
+			e.append("client {0} using wrong client version, current daemon version = {1}".format(jobData["jobData"]["clientName"],version))
+		if jobData["InternalUse"]["jsonFileVersion"] != version:
+			e.append("client {0} using wrong JSON version, current daemon version = {1}".format(jobData["jobData"]["clientName"],version))
+		if len(e) > 0:
+			for verErr in e:
+				logging.error(verErr)
+			return(e) # break on error and return errors to user
 
 		logging.info("job {0} submission JSON loaded".format(self.jobID))
 
@@ -120,8 +122,8 @@ class serverDaemon(object):
 			singleJob = copy.deepcopy(jobData)
 			singleJob.pop("jobFiles",None)
 			singleJob["jobData"]["jobName"] = os.path.splitext(os.path.basename(jobFile))[0]
-			singleJob["jobData"]["jobNumber"] = str(self.jobID)
-			singleJob["jobData"]["jobID"] = str(self.jobID)+":"+singleJob["jobData"]["jobName"]
+			singleJob["jobData"]["jobNumber"] = str(singleJob["jobData"]["jobID"])
+			singleJob["jobData"]["jobID"] = str(singleJob["jobData"]["jobID"])+":"+singleJob["jobData"]["jobName"]
 			singleJob["jobData"]["jobFile"] = os.path.join(jobDirectory,singleJob["jobData"]["jobName"]+".inp")
 			singleJob["jobData"]["jobDirectory"] = jobDirectory
 
@@ -330,18 +332,24 @@ class serverDaemon(object):
 			if "killed" in job["jobData"]["status"]:
 				return
 
-			with self.jobListLock:
-				job["jobData"]["status"] = "complete"
+			# check if job failed
+			with open("out.log") as log:
+				if "errors" in log.read():
+					with self.jobListLock:
+						job["jobData"]["status"] = "JOB ERROR"
+				else: 
+					with self.jobListLock:
+						job["jobData"]["status"] = "complete"
 
-				# add job to job history
-				self.jobHist.insert(0,job)
-				self.serializeJobHist()
+			# add job to job history
+			self.jobHist.insert(0,job)
+			self.serializeJobHist()
 
-				# remove job from jobs list
-				if job in self.jobs:
-					indexToRemove = self.jobs.index(job)
-					removedItem = self.jobs.pop(indexToRemove)
-					self.serializeJobList()
+			# remove job from jobs list
+			if job in self.jobs:
+				indexToRemove = self.jobs.index(job)
+				removedItem = self.jobs.pop(indexToRemove)
+				self.serializeJobList()
 
 	## killJob Method
 	# looks through all jobs in queue and kills requested jobs
@@ -411,7 +419,8 @@ class serverDaemon(object):
 			if "running" in job["jobData"]["status"]:
 				now = datetime.datetime.now()
 				deltaTime = now - self.start
-				hours, remainder = divmod(deltaTime.seconds, 3600)
+				deltaTimeSec = int(deltaTime.total_seconds())
+				hours, remainder = divmod(deltaTimeSec, 3600)
 				minutes, seconds = divmod(remainder, 60)
 				deltaTime = ("({0:d}:{1:02d}:{2:02d})".format(hours,minutes,seconds))
 				tmp.append("{0} {1}".format(job["jobData"]["status"],deltaTime))

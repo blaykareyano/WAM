@@ -6,6 +6,8 @@ from __future__ import print_function
 # Standard Libraries
 import sys
 import os
+import msvcrt
+import time
 import getpass
 import platform
 import subprocess
@@ -27,7 +29,7 @@ from tabulate import tabulate
 from utils.parseJSONFile import parseJSONFile
 
 # Development Version
-version = 0.4
+version = 0.5
 
 class frontEndClient(object):
 	def __init__(self, userArgs):
@@ -60,6 +62,7 @@ class frontEndClient(object):
 		# Other job controls
 		self.parser.add_argument("-get", help="Retrieve job given job id once completed. Files are placed into current directory. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
 		self.parser.add_argument("-m","--monitor", help="Checks on job status given job id. Retrieves all status files (*.msg, *.dat, *.sta, *.log) and places into current directory. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
+		self.parser.add_argument("-w","--watch", help="Pipes *.sta file to the user in a loop. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='?', metavar="job# or job#:jobName", action="store")
 		self.parser.add_argument("-k", "--kill", help="Kill job by job id. Entering the only the job number kills all jobs associated with that job number, entering both the job number and job name will only kill the specified job. If killing multiple jobs, separate each job ID with a space. \nAdditional Arguments: [-n [hostname]]", type=str, nargs='+', metavar="job# or job#:jobName", action="store")
 		
 		# Info request arguments
@@ -93,6 +96,10 @@ class frontEndClient(object):
 
 		if userArgs.monitor:
 			self.monitor(userArgs.monitor,userArgs.host)
+			sys.exit(0)
+
+		if userArgs.watch:
+			self.watch(userArgs.watch,userArgs.host)
 			sys.exit(0)
 
 		if userArgs.kill:
@@ -201,7 +208,6 @@ To quit the procedure enter: exit
 
 	## scpJobFiles
 	#  sends job files to the server daemon which will run job
-	#  \todo linux scp command [Popen]
 	def scpJobFiles(self,files,host):
 		print("Transferring files to: {0}:{1}".format(host,self.jobDirectory))
 		userName = self.serverConfFile["localhost"]["userName"]
@@ -209,10 +215,10 @@ To quit the procedure enter: exit
 		destination = host + ":" + self.jobDirectory
 		if self.opSystem == "Windows":
 			for file in files:
-				p = subprocess.Popen(["pscp","-scp", "-l", userName, "-pw", pw, file, destination])
+				p = subprocess.Popen(["pscp","-scp", "-l", userName, "-pw", pw, "-p", file, destination])
 				p.wait()
-		elif self.opSystem == "Linux":
-			pass
+		# elif self.opSystem == "Linux":
+		# 	pass
 		else:
 			print("*** ERROR: Incompatible operating system, exiting")
 			sys.exit(1)
@@ -234,6 +240,21 @@ To quit the procedure enter: exit
 		userInput = self.checkUserInput(host,cpus,gpus,email,priority)
 		host = userInput["host"]
 		
+		# connect to defined host
+		connectedServer = self.connectToServer(host)
+
+		# get configuration file from daemon
+		self.loadServerConfFile(host)
+
+		# create job ID with server
+		try:
+			self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
+			[jobID, self.jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
+			print("Job ID: {0}".format(jobID))
+		except Exception as e:
+			print("*** ERROR: Unable to initialize job: {0}".format(e))
+			sys.exit(1)
+
 		# create a dictionary with job submission information
 		jobInfo = {}
 		jobInfo["emailAddress"] = userInput["email"]
@@ -243,6 +264,7 @@ To quit the procedure enter: exit
 		jobInfo["clientUserName"] = self.userName
 		jobInfo["priority"] = userInput["priority"]
 		jobInfo["version"] = version
+		jobInfo["jobID"] = jobID
 
 		# write dictionary to JSON template file
 		jsonOutFile = Template(jsonTemplate).substitute(jobInfo)
@@ -260,28 +282,18 @@ To quit the procedure enter: exit
 		assert "InternalUse" in jobData.keys(), "JSON file ({0}) is missing the InternalUse block.".format(jsonFile)
 		assert jobData["InternalUse"]["jsonFileType"] == "abaqus", "Invalid job type: {0}".format(jobData["InternalUse"]["jsonFileType"])
 
-		# connect to defined host
-		connectedServer = self.connectToServer(host)
-
-		# get configuration file from daemon
-		self.loadServerConfFile(host)
-
-		# create job ID with server
-		try:
-			self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
-			[jobID, self.jobDirectory] = connectedServer.jobInitialization(self.runDirectory)
-			print("Job ID: {0}".format(jobID))
-		except Exception as e:
-			print("*** ERROR: Unable to initialize job: {0}".format(e))
-			sys.exit(1)
-
 		# send job files to server
 		self.scpJobFiles(inputFiles, host)
 
 		# submit job files
 		try:
-			connectedServer.jobDefinition(self.jobDirectory)
-			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
+			verErr = connectedServer.jobDefinition(self.jobDirectory)
+			if verErr != None:
+				for e in verErr:
+					print(e)
+				print("*** ERROR: job not submitted, please update your WAM client before proceeding")
+			else:
+				print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
 			print("*** ERROR: Unable to submit job: {0}".format(e))
 			sys.exit(1)
@@ -355,8 +367,13 @@ To quit the procedure enter: exit
 
 		# submit job files
 		try:
-			connectedServer.jobDefinition(self.jobDirectory)
-			print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
+			verErr = connectedServer.jobDefinition(self.jobDirectory)
+			if verErr != None:
+				for e in verErr:
+					print(e)
+				print("*** ERROR: job not submitted, please update your WAM client before proceeding")
+			else:
+				print("{0} job(s) submitted to {1} for analysis".format(len(inputFiles)-1,host))
 		except Exception as e:
 			print("*** ERROR: Unable to submit job: {0}".format(e))
 			sys.exit(1)
@@ -449,10 +466,10 @@ To quit the procedure enter: exit
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-p", source, destination])
 					p.wait()
-			elif self.opSystem == "Linux":
-				pass
+			# elif self.opSystem == "Linux":
+			# 	pass
 			else:
 				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
@@ -464,10 +481,10 @@ To quit the procedure enter: exit
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-p", source, destination])
 					p.wait()
-			elif self.opSystem == "Linux":
-				pass
+			# elif self.opSystem == "Linux":
+			# 	pass
 			else:
 				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
@@ -513,31 +530,109 @@ To quit the procedure enter: exit
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-p", source, destination])
 					p.wait()
-			elif self.opSystem == "Linux":
-				pass
+			# elif self.opSystem == "Linux":
+			# 	pass
 			else:
 				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
 		else:
 			files = [jobName + fileExt[1:] for fileExt in self.defaultMonitorFileTypes]
 			files = files[:-1]
-			files.append("out.log")
-			files.append("error.log")
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
-					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, source, destination])
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-p", source, destination])
 					p.wait()
-			elif self.opSystem == "Linux":
-				pass
+			# elif self.opSystem == "Linux":
+			# 	pass
 			else:
 				print("*** ERROR: Incompatible operating system, exiting")
 				sys.exit(1)
-		tmp = open(os.path.join(destination,"out.log"),"r")
-		tmp = tmp.read()
-		print("\n" + tmp)
+		if "*.log" in files:
+			tmp = open(os.path.join(destination,"out.log"),"r")
+			tmp = tmp.read()
+			print("\n" + tmp)
+
+	## watch Method
+	#  retrieves sta file and shows it to the use in a loop
+	def watch(self,jobID,host):
+		# check to make sure a host was specified
+		if host == None:
+			while True:
+				host = raw_input("Specify desired host (by name) or enter 'list' to view all active servers:\n")
+				print("\n")
+				if host == "list":
+					self.queryAllServers()
+				elif host:
+					break
+		
+		# load server config
+		self.loadServerConfFile(host)
+		self.runDirectory = self.serverConfFile["localhost"]["runDirectory"]
+
+		# normalize jobID input
+		jobIDsplit = string.split(jobID,":")
+		if len(jobIDsplit) > 1:
+			jobNumber = jobIDsplit[0]
+			jobName = string.split(jobIDsplit[1],".")[0] # incase .inp was added
+		else:
+			jobNumber = jobIDsplit[0]
+			jobName = None
+
+		# define job folder
+		connectedServer = self.connectToServer(host)
+		jobFolder = connectedServer.makePath(self.runDirectory,jobNumber)
+
+		# transfer files
+		print("Job {0} from {1}:{2}".format(jobID,host,jobFolder))
+		userName = self.serverConfFile["localhost"]["userName"]
+		pw = self.serverConfFile["localhost"]["password"]
+		destination = os.getcwd()
+
+		while True:
+			if jobName == None:
+				if self.opSystem == "Windows":
+					source = host + ":" + jobFolder + "/*.sta"
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-q", "-p", source, destination])
+					p.wait()
+
+					# Get newest sta file
+					statusFiles = []
+					for file in os.listdir(destination):
+						if file.endswith('.sta'):
+							statusFiles.append(file)
+					statusPaths = [os.path.join(destination, statusFile) for statusFile in statusFiles]
+					staFilePath = max(statusPaths, key=os.path.getctime)
+					staFileName = os.path.basename(staFilePath)
+				# elif self.opSystem == "Linux":
+				# 	pass
+				else:
+					print("*** ERROR: Incompatible operating system, exiting")
+					sys.exit(1)
+			else:
+				staFileName = jobName + ".sta"
+				if self.opSystem == "Windows":
+					source = host + ":" + jobFolder + "/" + staFileName
+					p = subprocess.Popen(["pscp", "-l", userName, "-pw", pw, "-q", "-p", source, destination])
+					p.wait()
+				# elif self.opSystem == "Linux":
+				# 	pass
+				else:
+					print("*** ERROR: Incompatible operating system, exiting")
+					sys.exit(1)
+
+			print("\n" + staFileName)
+			with open(os.path.join(destination,staFileName),"r") as staFile:
+				for line in (staFile.readlines() [-25:]): # only read the last 25 lines to keep from overflowing window
+					print(line, end ='')
+			
+			print("Press <ESC> or close this window to exit")
+			time.sleep(3) # wait 3 seconds before re-polling sta file
+			if msvcrt.kbhit():
+				if ord(msvcrt.getch()) == 27: # ESC key chr(27)
+					break
 
 	## killJob method
 	#  kills job given a jobID
@@ -652,6 +747,8 @@ To quit the procedure enter: exit
 
 		print(tabulate(table, headers, tablefmt="rst", numalign="center", stralign="center"))
 
+	## pullJobHistory Method
+	#  Gets the previous 20 (or so) jobs from the requested host (or all hosts)
 	def pullJobHistory(self,host):
 		# Initialize the table
 		headers = ["Host Name", "Username", "Job Number", "Job Name", "Status", "Submission Time"]
