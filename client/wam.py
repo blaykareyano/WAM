@@ -591,6 +591,7 @@ To quit the procedure enter: exit
 		pw = self.serverConfFile["localhost"]["password"]
 		destination = os.getcwd()
 
+		staFileName = None
 		while True:
 			if jobName == None:
 				if self.opSystem == "Windows":
@@ -603,9 +604,12 @@ To quit the procedure enter: exit
 					for file in os.listdir(destination):
 						if file.endswith('.sta'):
 							statusFiles.append(file)
-					statusPaths = [os.path.join(destination, statusFile) for statusFile in statusFiles]
-					staFilePath = max(statusPaths, key=os.path.getctime)
-					staFileName = os.path.basename(staFilePath)
+					if len(statusFiles) > 0:
+						statusPaths = [os.path.join(destination, statusFile) for statusFile in statusFiles]
+						staFilePath = max(statusPaths, key=os.path.getctime)
+						staFileName = os.path.basename(staFilePath)
+					else:
+						pass
 				# elif self.opSystem == "Linux":
 				# 	pass
 				else:
@@ -623,12 +627,15 @@ To quit the procedure enter: exit
 					print("*** ERROR: Incompatible operating system, exiting")
 					sys.exit(1)
 
-			print("\n" + staFileName)
-			with open(os.path.join(destination,staFileName),"r") as staFile:
-				for line in (staFile.readlines() [-25:]): # only read the last 25 lines to keep from overflowing window
-					print(line, end ='')
+			if staFileName != None:
+				print("\n" + staFileName)
+				with open(os.path.join(destination,staFileName),"r") as staFile:
+					for line in (staFile.readlines() [-25:]): # only read the last 25 lines to keep from overflowing window
+						print(line, end ='')
+			else:
+				pass
 			
-			print("Press <ESC> or close this window to exit")
+			print("Press <ESC> or close this window to exit\n")
 			time.sleep(3) # wait 3 seconds before re-polling sta file
 			if msvcrt.kbhit():
 				if ord(msvcrt.getch()) == 27: # ESC key chr(27)
