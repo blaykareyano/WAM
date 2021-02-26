@@ -475,9 +475,6 @@ To quit the procedure enter: exit
 				sys.exit(1)
 		else:
 			files = [jobName + fileExt[1:] for fileExt in self.defaultFileTypes]
-			files = files[:-1]
-			files.append("out.log")
-			files.append("error.log")
 			if self.opSystem == "Windows":
 				for file in files:
 					source = host + ":" + jobFolder + "/" + file
