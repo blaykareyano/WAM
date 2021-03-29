@@ -662,9 +662,6 @@ To quit the procedure enter: exit
 	# Looks through all servers and gathers machine info (cores, avail. memory, IP addr)
 	def queryAllServers(self):
 		sys.excepthook = Pyro4.util.excepthook
-		
-		# get licensing info
-		self.getLicenseInfo()
 
 		# Initialize the table
 		headers = ["Host Name", "IP Address", "Cores", "GPUS", "Total Memory", "Job Queue Length"]
@@ -704,9 +701,6 @@ To quit the procedure enter: exit
 	#  Looks through all servers and gathers queue info (host, user, job ID, status)
 	def queryAllQueues(self):
 		sys.excepthook = Pyro4.util.excepthook
-
-		# get licensing info
-		self.getLicenseInfo()
 
 		# Initialize the table
 		headers = ["Host Name", "Username", "Job ID", "Status", "Priority", "Est. Tokens"]
@@ -897,18 +891,6 @@ MA  02110-1301, USA.
 	def findFiles(self,which,where="."):
 		rule = re.compile(fnmatch.translate(which), re.IGNORECASE) # compile regex pattern into an object
 		return [name for name in os.listdir(where) if rule.match(name)]
-
-	def getLicenseInfo(self):
-		try:
-			licenseText = check_output('abaqus licensing -ru', shell=True)
-			lines = []
-			for line in licenseText.split('\n'):
-				if "Users of abaqus" in line:
-					lines.append(line)
-
-			print("\n",lines[1])
-		except Exception as e:
-			print("\nUnable to get license info: {0}".format(e))
 
 	def loadClientConfFile(self):
 		with self.confFileLock:
