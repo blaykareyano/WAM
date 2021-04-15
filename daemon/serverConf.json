@@ -14,7 +14,7 @@
 
     "nameServer" : {
         "registerWithNameServer" : true,    // register daemon with name server? (yes you should)
-        "nameServerIP" : "10.200.209.12",   // name server IP address
+        "nameServerIP" : "10.2.129.15",   // name server IP address
         "nameServerPort" : 9999,            // name server port # 
         "quitOnNameServerConnectionError" : false, // stop server in case of failure?
         "reconnectToNameServer_minutes" : 5 // check connection to name server every N minutes

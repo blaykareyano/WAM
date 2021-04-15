@@ -4,13 +4,13 @@
     },
 
     "nameServer" : {
-    	"nsIP" : "10.200.209.12",
+    	"nsIP" : "10.2.129.16",
     	"nsPort" : 9999
     },
 
     "defaults" : {
     	"email" : "b.arellano@questintegrity.com", // default email for -e, --email command
-        "fileTypes" : ["*.odb","*.dat","*.log"], // default file types to retrieve when running -get command
+        "fileTypes" : ["*.odb","*.dat"], // default file types to retrieve when running -get command
     	"monitorFileTypes" : ["*.sta","*.msg","*.dat"] // default files types to pull for a -m, --monitor command
     }
 
