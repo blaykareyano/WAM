@@ -10,7 +10,7 @@
 
     "defaults" : {
     	"email" : "b.arellano@questintegrity.com", // default email for -e, --email command
-        "fileTypes" : ["*.odb","*.dat"], // default file types to retrieve when running -get command
+        "fileTypes" : ["*.odb","*.dat","*.msg"], // default file types to retrieve when running -get command
     	"monitorFileTypes" : ["*.sta","*.msg","*.dat"] // default files types to pull for a -m, --monitor command
     }
 
